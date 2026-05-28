@@ -1,0 +1,10 @@
+*.bin
+*.iq
+*.npy
+*.h5
+*.dat
+*.pth
+*.ckpt
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
