@@ -172,8 +172,8 @@ class exp3_wifi_tx(gr.top_block):
 
 def main():
     p = argparse.ArgumentParser(description="Experiment 3 WiFi TX (headless)")
-    p.add_argument('--addr', default=TX_ADDR, help='N-series TX IP (used if --device not given)')
-    p.add_argument('--device', default=None,
+    p.add_argument('--addr', default=None, help='N-series TX IP (used if --device not given)')
+    p.add_argument('--device', required=True,
                    help='full UHD device args, e.g. "addr=192.168.10.5" or '
                         '"serial=3259373" for a B205mini. Overrides --addr.')
     p.add_argument('--freq', type=float, default=CENTER_FREQ, help='center freq Hz')
@@ -188,6 +188,8 @@ def main():
     args = p.parse_args()
 
     # Resolve device args: --device wins, else addr=
+    if args.device is None and args.addr is None:
+        p.error("Must specify --device or --addr")
     if args.device is None:
         args.device = f"addr={args.addr}"
 
