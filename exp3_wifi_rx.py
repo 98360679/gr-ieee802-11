@@ -42,7 +42,7 @@ import ieee802_11
 
 
 # Configuration constants
-RX_ADDR     = "192.168.10.4"
+#RX_ADDR     = "192.168.10.4"
 CENTER_FREQ = 2.45e9
 SAMP_RATE   = 5e6
 RX_ANTENNA  = "RX2"
@@ -225,8 +225,8 @@ class _FrameLogger(gr.basic_block):
 
 def main():
     p = argparse.ArgumentParser(description="Experiment 3 WiFi RX (headless v3, stock chain)")
-    p.add_argument('--addr', default=RX_ADDR)
-    p.add_argument('--device', default=None,
+    p.add_argument('--addr', default=None)
+    p.add_argument('--device', required=True,
                    help='UHD device args, e.g. "addr=192.168.10.4" or "serial=3256204"')
     p.add_argument('--freq', type=float, default=CENTER_FREQ)
     p.add_argument('--antenna', default=RX_ANTENNA, help='"RX2" or "J2"')
@@ -237,6 +237,9 @@ def main():
                    help='print payload ascii/hex snippet for each of your frames')
     args = p.parse_args()
 
+    if args.device is None and args.addr is None:
+        p.error("Must specify either --addr or --device")
+        sys.exit(1)
     if args.device is None:
         args.device = f"addr={args.addr}"
     os.makedirs(args.out, exist_ok=True)
