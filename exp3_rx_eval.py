@@ -105,6 +105,37 @@ def windows_from_burst(x, start, align_search=64, model=None):
     return (None, None) if best is None else (best[1], best[2])
 
 
+def active_power(x, bursts=None):
+    """Mean power over each detected burst's active region. Returns (powers, bursts).
+
+    This is the quantity PSR is defined on: capture signal-only and
+    perturbation-only, then PSR_dB = 10*log10(mean(P_pert)/mean(P_sig)).
+    """
+    if bursts is None:
+        bursts = detect_bursts(x)
+    powers = []
+    for s, _e in bursts:
+        seg = x[s:s + ACTIVE]
+        if len(seg) >= ACTIVE:
+            powers.append(float(np.mean(np.abs(seg) ** 2)))
+    return np.array(powers), bursts
+
+
+def report_power(x, label):
+    P, bursts = active_power(x)
+    peak = float(np.abs(x).max()) if len(x) else 0.0
+    print(f"\n──── POWER  {label} ────")
+    clip = "   ** CLIP RISK (reduce RX gain) **" if peak > 0.95 else ""
+    print(f"  bursts detected: {len(P)}   peak |x|: {peak:.4f}{clip}")
+    if len(P):
+        mp = float(P.mean())
+        print(f"  active-region power: mean {mp:.6e}  median {float(np.median(P)):.6e}")
+        print(f"  active-region power (dB): {10*np.log10(mp + 1e-30):.2f} dB")
+        print(f"  -> for PSR: subtract the signal-only dB from the perturbation-only dB")
+    else:
+        print("  (no bursts — check gain/freq/threshold)")
+
+
 # ── classify + report ─────────────────────────────────────────────────
 def classify_stream(x, model, align_search=64):
     bursts = detect_bursts(x)
@@ -195,6 +226,8 @@ def main():
     p.add_argument('--true-device', type=int, default=None, help='device 1..6 being transmitted')
     p.add_argument('--model', default=LOCAL_PT if os.path.exists(LOCAL_PT) else SAVE_PT)
     p.add_argument('--align-search', type=int, default=64, help='+/- sample offset search (0=off)')
+    p.add_argument('--measure-power', action='store_true',
+                   help='report active-region power (for PSR calibration) instead of classifying')
     p.add_argument('--label', default='capture')
     # selftest
     p.add_argument('--frame', default='/dev/shm/frame.bin')
@@ -214,10 +247,6 @@ def main():
     if args.dev is None:
         args.dev = f"addr={args.addr}"
 
-    model = FingerprintCNN(NUM_CLASSES)
-    model.load_state_dict(torch.load(args.model, map_location='cpu'))
-    model.eval()
-
     if args.source == 'file':
         if not args.file:
             p.error("--source file requires --file")
@@ -228,8 +257,16 @@ def main():
         x = src_selftest(args)
         label = f"SELFTEST eps={args.epsilon}" + (
             f" snr={args.snr_db}dB" if args.snr_db is not None else "")
+    print(f"loaded {len(x)} samples ({len(x)/FS*1e3:.1f} ms)")
 
-    print(f"loaded {len(x)} samples ({len(x)/FS*1e3:.1f} ms)  model={os.path.basename(args.model)}")
+    if args.measure_power:
+        report_power(x, label)             # PSR calibration: no model needed
+        return
+
+    model = FingerprintCNN(NUM_CLASSES)
+    model.load_state_dict(torch.load(args.model, map_location='cpu'))
+    model.eval()
+    print(f"  model = {os.path.basename(args.model)}")
     results = classify_stream(x, model, args.align_search)
     report(results, args.true_device, label)
 
