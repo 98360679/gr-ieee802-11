@@ -35,15 +35,79 @@ artifacts are git-ignored (see `.gitignore`).
 
 ---
 
+## Installation
+
+The two halves have independent requirements. You only need the GNU Radio stack
+(below) for the **capture** scripts; the **fingerprinting** pipeline needs only
+Python + PyTorch.
+
+### Prerequisites
+- **GNU Radio 3.10** and a C++ toolchain (`cmake`, `make`, a compiler) — required
+  for the capture scripts.
+- **UHD** drivers and a **USRP** (N210 / B200 / B205) — for live capture only.
+- **Python 3** with `numpy`, `scipy`, `matplotlib`, `scikit-learn`, and
+  **PyTorch** (`torch`) — for analysis and fingerprinting.
+
+Install the Python packages (a virtualenv is recommended):
+
+```bash
+pip install numpy scipy matplotlib scikit-learn torch
+# For GPU training, install the CUDA build of torch per https://pytorch.org/get-started/
+```
+
+### Build the GNU Radio OOT modules (for capture)
+
+`exp3_wifi_rx.py` does `import ieee802_11`, which requires the `gr-foo` and
+`gr-ieee802-11` modules to be **built and installed** into your GNU Radio
+environment. Use the vendored copies in this repo (build `gr-foo` first — it's a
+dependency of `gr-ieee802-11`):
+
+```bash
+# 1) gr-foo (dependency)
+cd gr-foo-maint-3.10
+mkdir -p build && cd build
+cmake ..
+make
+sudo make install
+sudo ldconfig
+cd ../..
+
+# 2) gr-ieee802-11
+cd gr-ieee802-11-maint-3.10
+mkdir -p build && cd build
+cmake ..
+make
+sudo make install
+sudo ldconfig
+cd ../..
+```
+
+Then a couple of one-time post-install steps required by `gr-ieee802-11`:
+
+```bash
+# Build the OFDM PHY hierarchical block — open in GNU Radio Companion and
+# generate it; this installs it under ~/.grc_gnuradio/ (where exp3_wifi_rx.py
+# looks for it via GRC_HIER_PATH).
+gnuradio-companion gr-ieee802-11-maint-3.10/examples/wifi_phy_hier.grc
+
+# Tagged-stream blocks buffer a whole frame; raise max shared memory.
+sudo sysctl -w kernel.shmmax=2147483648
+
+# Optimize VOLK kernels for your CPU (recommended).
+volk_profile
+```
+
+> If `import ieee802_11` fails afterward, your module was likely installed under
+> a different `CMAKE_INSTALL_PREFIX` than GNU Radio uses — pass a matching
+> `cmake -DCMAKE_INSTALL_PREFIX=…` and ensure `PYTHONPATH`/`LD_LIBRARY_PATH`
+> cover it. See `gr-ieee802-11-maint-3.10/README.md` for full troubleshooting.
+
+---
+
 ## 1. Signal capture & link verification
 
-### Dependencies
-- [GNU Radio](https://www.gnuradio.org/) 3.10
-- [UHD](https://github.com/EttusResearch/uhd) drivers + a USRP (N210/B2xx)
-- The `gr-foo` and `gr-ieee802-11` OOT modules **installed** so that
-  `import ieee802_11` works (the vendored copies here are the sources; build &
-  install them per their own READMEs).
-- Python 3, NumPy
+> Requires the GNU Radio OOT modules from [Installation](#installation) and a
+> USRP reachable over UHD.
 
 ### Receive 802.11 frames — `exp3_wifi_rx.py`
 A headless reimplementation of the stock `gr-ieee802-11` `wifi_rx.py` receive
@@ -90,6 +154,9 @@ signal representations × two model families:
 
 Uses a **leakage-safe split** (train/val on `run_1+run_2` split *by burst*, test
 on the unseen `run_3`) and reports both window-level and frame-level accuracy.
+
+Needs only the Python packages from [Installation](#installation) (no GNU Radio
+required) and pre-captured I/Q `.bin` files.
 
 ```bash
 cd radio_fingerprint
