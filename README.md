@@ -174,8 +174,11 @@ env var). See the [subproject README](radio_fingerprint/README.md) and
 
 ## Credits & licensing
 
+This project is licensed under the **GNU General Public License v3.0** — see
+[`LICENSE`](LICENSE).
+
 `gr-ieee802-11` and `gr-foo` are third-party GNU Radio modules by
-[Bastian Bloessl](https://github.com/bastibl), vendored here for convenience and
-distributed under their own licenses (see the `LICENSE` file inside each
-directory). All other code in this repository is the authors' own experimental
-work.
+[Bastian Bloessl](https://github.com/bastibl), vendored here for convenience.
+They are themselves GPLv3 (see the `LICENSE` file inside each directory), which
+is why the project as a whole is distributed under the same terms. All other
+code in this repository is the authors' own experimental work.
