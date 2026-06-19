@@ -1,0 +1,16 @@
+# Python dependencies for radio_adversarial_attacks
+#
+# Install with:  pip install -r requirements.txt
+#
+# NOTE: GNU Radio and its OOT modules (gnuradio, ieee802_11, pmt) are NOT
+# pip-installable here — they come from a system GNU Radio 3.10 install plus the
+# gr-foo / gr-ieee802-11 modules built per the README's Installation section.
+# These are only needed for the capture scripts (exp3_wifi_rx.py).
+#
+# For GPU training, install the CUDA build of torch from https://pytorch.org/.
+
+numpy
+scipy
+matplotlib
+scikit-learn
+torch

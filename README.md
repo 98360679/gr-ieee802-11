@@ -51,7 +51,7 @@ Python + PyTorch.
 Install the Python packages (a virtualenv is recommended):
 
 ```bash
-pip install numpy scipy matplotlib scikit-learn torch
+pip install -r requirements.txt
 # For GPU training, install the CUDA build of torch per https://pytorch.org/get-started/
 ```
 
