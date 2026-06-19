@@ -70,15 +70,16 @@ class adversary_tx(gr.top_block):
                 uhd.tune_request(a.freq, rf_freq=a.freq - LO_OFFSET,
                                  rf_freq_policy=uhd.tune_request.POLICY_MANUAL), ch)
             self.usrp.set_antenna(a.antenna, ch)
-        self.usrp.set_normalized_gain(a.tx_gain, 0)
-        self.usrp.set_normalized_gain(a.adv_gain, 1)
+        self.usrp.set_gain(a.tx_gain, 0)    # ch0 legit, ABSOLUTE dB (range 0..35)
+        self.usrp.set_gain(a.adv_gain, 1)   # ch1 adversary, ABSOLUTE dB (range 0..35)
 
         # ── MIMO time sync + common synchronized start ──────────────────
         # mboard0 is the master (internal), mboard1 slaves off the MIMO cable.
         try:
             self.usrp.set_clock_source("internal", 0)
-            self.usrp.set_time_source("internal", 0)
-            self.usrp.set_clock_source("mimo", 1)
+            self.usrp.set_time_source("none", 0)   # mb0 master: 'internal' is NOT a valid
+                                                   # time source (only clock); 'none' is.
+            self.usrp.set_clock_source("mimo", 1)  # mb1 slave: clock+time off the MIMO cable
             self.usrp.set_time_source("mimo", 1)
         except Exception as e:
             print(f"  (clock/time source setup note: {e})")
@@ -116,7 +117,8 @@ class adversary_tx(gr.top_block):
             for ch, tag in ((0, "legit "), (1, "advers")):
                 print(f"    ch{ch} {tag}: f={self.usrp.get_center_freq(ch)/1e9:.4f}GHz "
                       f"ant={self.usrp.get_antenna(ch)} "
-                      f"ngain={self.usrp.get_normalized_gain(ch):.3f}")
+                      f"gain={self.usrp.get_gain(ch):.1f}dB "
+                      f"(norm {self.usrp.get_normalized_gain(ch):.3f})")
             print(f"    rate    : {self.usrp.get_samp_rate()/1e6:.3f} MHz")
             print("  ----------------------")
         except Exception as e:
@@ -150,12 +152,13 @@ def main():
                    help='perturbation amplitude scale (PSR knob)')
     p.add_argument('--clean', action='store_true',
                    help='baseline run: keep ch1 silent (no perturbation)')
-    p.add_argument('--freq', type=float, default=2.45e9, help='center freq Hz')
+    p.add_argument('--freq', type=float, default=2.452e9,
+                   help='center freq Hz (match the RX; wifi_tx.grc uses 2.452 GHz / ch9)')
     p.add_argument('--antenna', default='J1', help='TX antenna name')
-    p.add_argument('--tx-gain', type=float, default=0.75,
-                   help='ch0 legit normalized gain 0..1')
-    p.add_argument('--adv-gain', type=float, default=0.60,
-                   help='ch1 adversary normalized gain 0..1')
+    p.add_argument('--tx-gain', type=float, default=33.5,
+                   help='ch0 legit ABSOLUTE TX gain in dB (realized cap ~33.5 @2.45GHz)')
+    p.add_argument('--adv-gain', type=float, default=21.0,
+                   help='ch1 adversary ABSOLUTE TX gain in dB (range 0..35)')
     p.add_argument('--duration', type=int, default=60, help='seconds to transmit')
     a = p.parse_args()
 
@@ -169,7 +172,7 @@ def main():
     print(f"  L={L} samples ({L/SAMP_RATE*1e3:.1f} ms loop)   "
           f"freq={a.freq/1e9:.3f}GHz  fs={SAMP_RATE/1e6:.1f}MHz")
     if not a.clean:
-        print(f"  epsilon={a.epsilon}   tx_gain={a.tx_gain}  adv_gain={a.adv_gain}")
+        print(f"  epsilon={a.epsilon}   tx_gain={a.tx_gain}dB  adv_gain={a.adv_gain}dB")
     print(f"  duration={a.duration}s")
     print("  (if 'send buffer could not be resized': "
           "sudo sysctl -w net.core.wmem_max=2500000)")

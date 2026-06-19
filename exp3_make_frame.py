@@ -50,6 +50,10 @@ SAMP_RATE  = 5e6
 MULT_CONST = 0.7      # MUST match clean/perturbed TX for a valid OTA comparison
 PDU_LENGTH = 500      # payload bytes per frame
 ENCODING   = 0        # 0 = BPSK 1/2
+TARGET_PEAK = 0.8     # scale the saved frame so peak |x| <= this. The raw
+                      # wifi_phy_hier*0.7 output peaks ~2.3 (7 dB OFDM PAPR),
+                      # which HARD-CLIPS the fc32 DAC (clip at 1.0) and destroys
+                      # the OFDM decode. Keep headroom under 1.0.
 
 # Capture-time padding around the single frame. pad_front gives the perturbation
 # a clean guard before the preamble; pad_tail is just enough to flush the burst.
@@ -149,6 +153,16 @@ def main():
     out = np.zeros(period_len, dtype=np.complex64)
     # Keep the frame at its natural pad_front offset within the period.
     out[pad_front:pad_front + frame_len] = burst[first:last + 1]
+
+    # Scale so the peak stays safely under the fc32 DAC clip (1.0). Without this
+    # the OFDM peak (~2.3) clips ~40% of the active samples and the frame won't
+    # decode. perturbation.bin must be crafted against THIS scaled frame.
+    raw_peak = float(np.max(np.abs(out)))
+    if raw_peak > 0:
+        out *= np.float32(TARGET_PEAK / raw_peak)
+        print(f"  scaled frame: raw peak {raw_peak:.3f} -> {TARGET_PEAK} "
+              f"(k={TARGET_PEAK/raw_peak:.5f})")
+
     out.tofile(args.out)
 
     rms = float(np.sqrt(np.mean(np.abs(out[pad_front:pad_front + frame_len]) ** 2)))
