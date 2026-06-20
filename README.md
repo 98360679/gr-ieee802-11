@@ -82,6 +82,32 @@ sudo ldconfig
 cd ../..
 ```
 
+#### No-sudo (user-prefix) install
+
+If you can't `sudo make install` into the system prefix, build into `~/.local`
+instead — e.g. for `gr-foo`:
+
+```bash
+cd gr-foo-maint-3.10
+mkdir -p build && cd build
+cmake -DCMAKE_INSTALL_PREFIX="$HOME/.local" -DCMAKE_BUILD_TYPE=Release ..
+make -j"$(nproc)"
+make install        # no sudo — installs under ~/.local
+cd ../..
+```
+
+A user-prefix install is **not** on the default search paths, so the `foo`
+module (needed by `exp3_wifi_tx.py`) won't import until you export these — add
+them to your `~/.bashrc` to make them persistent:
+
+```bash
+export PYTHONPATH="$HOME/.local/lib/python3.12/site-packages:$PYTHONPATH"
+export LD_LIBRARY_PATH="$HOME/.local/lib/x86_64-linux-gnu:$HOME/.local/lib:$LD_LIBRARY_PATH"
+```
+
+> Adjust `python3.12` to your Python version. Verify with
+> `python3 -c "import foo; print(foo.__file__)"`.
+
 Then a couple of one-time post-install steps required by `gr-ieee802-11`:
 
 ```bash
