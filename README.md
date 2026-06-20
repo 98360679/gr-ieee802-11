@@ -146,14 +146,15 @@ chain (Schmidl-Cox short/long sync → FFT → frame equalizer → MAC decode). 
   4-character frame id), verifying received payloads **byte-for-byte**.
 
 ```bash
-python3 exp3_wifi_rx.py --freq 2.45e9 --antenna RX2 --gain 1.0
-python3 exp3_wifi_rx.py --device "serial=3256204" --freq 2.45e9 --antenna RX2
+python3 exp3_wifi_rx.py --device "addr=192.168.10.4" --freq 2.45e9 --gain 0.02
+python3 exp3_wifi_rx.py --device "serial=3256204" --freq 2.45e9 --antenna J2
 ```
 
 Key options: `--addr`/`--device` (UHD device), `--freq`, `--antenna`
-(`RX2`/`J2`), `--gain` (normalized 0–1), `--duration` (seconds), `--out`
-(capture dir), `--verbose`. At the end it prints how many frames decoded, how
-many matched byte-for-byte, and how many had bit errors.
+(`J1`/`J2` on USRP2; `RX2` on B2xx — default `J2`), `--gain` (normalized 0–1),
+`--duration` (seconds), `--out` (capture dir), `--verbose`. At the end it prints
+how many frames decoded, how many matched byte-for-byte, and how many had bit
+errors.
 
 ### Analyze a capture — `find_bursts.py`
 Given a `raw_iq.bin`, detects energy bursts and checks whether they form a
@@ -164,6 +165,40 @@ at 5 MHz) — useful for distinguishing *"frames arriving but not decoding"* fro
 ```bash
 python3 find_bursts.py ./capture/raw_iq.bin
 ```
+
+### Running an OTA link (quickstart)
+
+The testbed is two radios: a transmitter (`exp3_wifi_tx.py`, a separate station —
+no Ethernet link to the RX host is needed) and this receiver. The single most
+common failure is **RX front-end saturation**: at close range the signal arrives
+*too hot* and clips, so you get **0 decodes despite high power** (`find_bursts.py`
+reports no bursts even though mean power is large). The cure is to turn RX gain
+*down*, not up.
+
+1. **Decode tools need `foo`?** No — the RX needs only `ieee802_11`. The TX needs
+   the `gr-foo` env vars (see [Installation](#installation)).
+
+2. **Tune RX gain with the live meter while the TX transmits.** `live_power.py`
+   prints mean power several times a second (no decode, no file):
+   ```bash
+   python3 live_power.py --device "addr=192.168.10.4" --gain 0.1
+   ```
+   Key the TX and watch the bar. Lower `--gain` (0.05, 0.02, …) until the reading
+   sits around **−10 to −20 dB** with **no `SATURATING`** flag. Saturation shows
+   as the bar pinned near 0 dB.
+
+3. **Decode at that gain.** Run the receiver with the gain you just found:
+   ```bash
+   python3 exp3_wifi_rx.py --device "addr=192.168.10.4" --gain 0.02 --duration 30
+   ```
+   You should see live `[YOURS] … -> payload: EXACT MATCH` lines and a final
+   summary. (Verified working at `--gain 0.02` ≈ −14 dB on the USRP2 testbed; the
+   right gain is **setup-specific** — re-tune with `live_power.py` if the TX power
+   or antenna separation changes.)
+
+> **Offline check (one radio, no RF):** `exp3_wifi_tx.py --tap tx.bin` dumps the
+> exact transmitted samples; `decode_iq_file.py tx.bin` runs the RX chain on that
+> file. A clean decode there confirms TX↔RX compatibility independent of the link.
 
 ---
 
