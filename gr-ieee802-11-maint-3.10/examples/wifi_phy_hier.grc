@@ -23,6 +23,7 @@ options:
     sizing_mode: fixed
     thread_safe_setters: ''
     title: WiFi PHY Hier
+    window_size: (1000,1000)
   states:
     bus_sink: false
     bus_source: false
@@ -507,7 +508,7 @@ blocks:
     label: ''
     short_id: ''
     type: eng_float
-    value: 5.89e9
+    value: 2.437e9
   states:
     bus_sink: false
     bus_source: false
