@@ -44,8 +44,15 @@ def load_frames(dev_idx):
     """
     src = os.path.join(FRAMES_DIR, f"frames_dev{dev_idx}.npz")
     tmp = f"/tmp/frames_dev{dev_idx}.npz"
-    if not os.path.exists(tmp) or os.path.getsize(tmp) != os.path.getsize(src):
-        shutil.copy(src, tmp)
+    # Refresh the local cache from the drive when it's present; if the external
+    # drive has disconnected, fall back to a valid existing /tmp cache.
+    if os.path.exists(src):
+        if not os.path.exists(tmp) or os.path.getsize(tmp) != os.path.getsize(src):
+            shutil.copy(src, tmp)
+    elif not os.path.exists(tmp):
+        raise FileNotFoundError(
+            f"frames for dev{dev_idx}: drive source missing ({src}) and no "
+            f"cache at {tmp}. Reconnect the T9 drive.")
     with np.load(tmp, allow_pickle=True) as z:
         return z["frames"].astype(np.complex64), z["run"].astype(int)
 
