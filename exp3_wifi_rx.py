@@ -23,8 +23,8 @@ Wiring copied verbatim from stock examples/wifi_rx.py:
 Also taps raw I/Q to raw_iq.bin, and flags YOUR frames (0x41 'A' fill).
 
 Run:
-  python3 exp3_wifi_rx.py --freq 2.45e9 --antenna RX2 --gain 1.0
-  python3 exp3_wifi_rx.py --device "serial=3256204" --freq 2.45e9 --antenna RX2
+  python3 exp3_wifi_rx.py --device "addr=192.168.10.4" --antenna J2 --freq 2.45e9 --gain 0.75
+  python3 exp3_wifi_rx.py --device "serial=3256204" --freq 2.45e9 --antenna J2
 """
 
 import sys
@@ -45,7 +45,7 @@ import ieee802_11
 #RX_ADDR     = "192.168.10.4"
 CENTER_FREQ = 2.45e9
 SAMP_RATE   = 5e6
-RX_ANTENNA  = "RX2"
+RX_ANTENNA  = "J2"
 NORM_GAIN   = 0.75
 LO_OFFSET   = 0
 WINDOW_SIZE = 48          # stock GRC 'window_size' variable
@@ -229,7 +229,7 @@ def main():
     p.add_argument('--device', required=True,
                    help='UHD device args, e.g. "addr=192.168.10.4" or "serial=3256204"')
     p.add_argument('--freq', type=float, default=CENTER_FREQ)
-    p.add_argument('--antenna', default=RX_ANTENNA, help='"RX2" or "J2"')
+    p.add_argument('--antenna', default=RX_ANTENNA, help='"J1" or "J2" (USRP2); use "RX2" for B2xx')
     p.add_argument('--duration', type=int, default=30)
     p.add_argument('--gain', type=float, default=NORM_GAIN)
     p.add_argument('--out', default='./capture')
