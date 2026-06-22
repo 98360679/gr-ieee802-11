@@ -16,7 +16,7 @@ options:
     output_language: python
     placement: (0,0)
     qt_qss_theme: ''
-    realtime_scheduling: ''
+    realtime_scheduling: '1'
     run: 'True'
     run_command: '{python} -u {filename}'
     run_options: run
@@ -52,6 +52,27 @@ blocks:
     bus_source: false
     bus_structure: null
     coordinate: [1064, 136.0]
+    rotation: 0
+    state: enabled
+- name: adv_gain_abs
+  id: variable_qtgui_range
+  parameters:
+    comment: ''
+    gui_hint: ''
+    label: Adversary Gain
+    min_len: '200'
+    orient: QtCore.Qt.Horizontal
+    rangeType: float
+    start: '0'
+    step: '0.5'
+    stop: '35'
+    value: '0'
+    widget: counter_slider
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [1784, 448.0]
     rotation: 0
     state: enabled
 - name: encoding
@@ -97,13 +118,25 @@ blocks:
     start: '0'
     step: '0.01'
     stop: '4'
-    value: '1.0'
+    value: '0'
     widget: counter_slider
   states:
     bus_sink: false
     bus_source: false
     bus_structure: null
     coordinate: [1632, 96.0]
+    rotation: 0
+    state: enabled
+- name: frame_file
+  id: variable
+  parameters:
+    comment: Legit device frame to replay, looped (complex64 IQ at samp_rate)
+    value: '"/dev/shm/frame.bin"'
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [1240, 240.0]
     rotation: 0
     state: enabled
 - name: freq
@@ -284,18 +317,6 @@ blocks:
     coordinate: [1240, 160.0]
     rotation: 0
     state: enabled
-- name: frame_file
-  id: variable
-  parameters:
-    comment: Legit device frame to replay, looped (complex64 IQ at samp_rate)
-    value: '"/dev/shm/frame.bin"'
-  states:
-    bus_sink: false
-    bus_source: false
-    bus_structure: null
-    coordinate: [1240, 240.0]
-    rotation: 0
-    state: enabled
 - name: samp_rate
   id: variable_qtgui_chooser
   parameters:
@@ -338,7 +359,7 @@ blocks:
     start: 2.4e9
     step: 1e6
     stop: 5.5e9
-    value: 2.45e9
+    value: 2.452e9
     widget: counter_slider
   states:
     bus_sink: false
@@ -352,7 +373,7 @@ blocks:
   parameters:
     comment: ''
     gui_hint: ''
-    label: Absolute gain range
+    label: Normalized gain
     min_len: '200'
     orient: QtCore.Qt.Horizontal
     rangeType: float
@@ -368,27 +389,25 @@ blocks:
     coordinate: [1256, 16.0]
     rotation: 0
     state: enabled
-- name: blocks_file_source_pert
-  id: blocks_file_source
+- name: tx_gain_abs
+  id: variable_qtgui_range
   parameters:
-    affinity: ''
-    alias: ''
-    begin_tag: pmt.PMT_NIL
-    comment: Channel-aware adversarial perturbation generated offline (FGSM/PGD vs
-      SARP, Kim et al.). Complex64 IQ @ samp_rate.
-    file: pert_file
-    length: '0'
-    maxoutbuf: '0'
-    minoutbuf: out_buf_size
-    offset: '0'
-    repeat: 'True'
-    type: complex
-    vlen: '1'
+    comment: ''
+    gui_hint: ''
+    label: Absolute gain
+    min_len: '200'
+    orient: QtCore.Qt.Horizontal
+    rangeType: float
+    start: '0'
+    step: '0.5'
+    stop: '35'
+    value: '33.5'
+    widget: counter_slider
   states:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [224, 456.0]
+    coordinate: [1704, 264.0]
     rotation: 0
     state: enabled
 - name: blocks_file_source_frame
@@ -412,6 +431,29 @@ blocks:
     bus_source: false
     bus_structure: null
     coordinate: [224, 360.0]
+    rotation: 0
+    state: enabled
+- name: blocks_file_source_pert
+  id: blocks_file_source
+  parameters:
+    affinity: ''
+    alias: ''
+    begin_tag: pmt.PMT_NIL
+    comment: Channel-aware adversarial perturbation generated offline (FGSM/PGD vs
+      SARP, Kim et al.). Complex64 IQ @ samp_rate.
+    file: pert_file
+    length: '0'
+    maxoutbuf: '0'
+    minoutbuf: out_buf_size
+    offset: '0'
+    repeat: 'True'
+    type: complex
+    vlen: '1'
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [224, 472.0]
     rotation: 0
     state: enabled
 - name: blocks_message_strobe_0_0
@@ -464,7 +506,7 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [992, 456.0]
+    coordinate: [992, 448.0]
     rotation: 0
     state: disabled
 - name: blocks_vector_source_x_0
@@ -504,7 +546,7 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [1176, 424.0]
+    coordinate: [1144, 360.0]
     rotation: 0
     state: disabled
 - name: ieee802_11_mac_0
@@ -522,7 +564,7 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [360, 360.0]
+    coordinate: [240, 208.0]
     rotation: 0
     state: disabled
 - name: network_socket_pdu_0
@@ -542,7 +584,7 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [112, 384.0]
+    coordinate: [80, 384.0]
     rotation: 0
     state: disabled
 - name: qtgui_freq_sink_pert
@@ -704,7 +746,7 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [992, 328.0]
+    coordinate: [912, 328.0]
     rotation: 0
     state: enabled
 - name: snippet_time_sync
@@ -856,10 +898,10 @@ blocks:
     clock_source6: ''
     clock_source7: ''
     comment: ''
-    dev_addr: addr0=192.168.10.3,addr1=192.168.10.4
+    dev_addr: addr0=192.168.10.3,addr1=192.168.10.5
     dev_args: '""'
-    gain0: tx_gain
-    gain1: adv_gain
+    gain0: tx_gain_abs
+    gain1: adv_gain_abs
     gain10: '0'
     gain11: '0'
     gain12: '0'
@@ -890,8 +932,8 @@ blocks:
     gain7: '0'
     gain8: '0'
     gain9: '0'
-    gain_type0: normalized
-    gain_type1: normalized
+    gain_type0: default
+    gain_type1: default
     gain_type10: default
     gain_type11: default
     gain_type12: default
@@ -1005,7 +1047,7 @@ blocks:
     start_time: '-1.0'
     stream_args: ''
     stream_chans: '[]'
-    sync: ''
+    sync: none
     time_source0: ''
     time_source1: mimo
     time_source2: ''
@@ -1039,7 +1081,7 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [688, 344.0]
+    coordinate: [688, 224.0]
     rotation: 0
     state: disabled
 
