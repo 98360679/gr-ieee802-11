@@ -146,7 +146,7 @@ blocks:
       5910000000.0, 5920000000.0]'
     orient: Qt.QVBoxLayout
     type: real
-    value: '5890000000'
+    value: '2412000000.0'
     widget: combo_box
   states:
     bus_sink: false
@@ -227,7 +227,7 @@ blocks:
     options: '[5e6, 10e6, 20e6]'
     orient: Qt.QVBoxLayout
     type: real
-    value: 10e6
+    value: 5e6
     widget: combo_box
   states:
     bus_sink: false
@@ -310,7 +310,7 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [600, 676.0]
+    coordinate: [592, 696.0]
     rotation: 0
     state: enabled
 - name: foo_wireshark_connector_0
@@ -378,7 +378,7 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [264, 340.0]
+    coordinate: [256, 320.0]
     rotation: 180
     state: enabled
 - name: network_tuntap_pdu_0
@@ -413,7 +413,7 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [124.0, 552]
+    coordinate: [136.0, 616]
     rotation: 270
     state: true
 - name: qtgui_const_sink_x_0
@@ -505,7 +505,7 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [208, 756.0]
+    coordinate: [216, 832.0]
     rotation: 0
     state: enabled
 - name: uhd_usrp_sink_0
@@ -513,7 +513,7 @@ blocks:
   parameters:
     affinity: ''
     alias: ''
-    ant0: ''
+    ant0: '"TX/RX"'
     ant1: ''
     ant10: ''
     ant11: ''
@@ -619,7 +619,7 @@ blocks:
     clock_source6: ''
     clock_source7: ''
     comment: ''
-    dev_addr: ''
+    dev_addr: addr=192.168.10.2
     dev_args: '""'
     gain0: tx_gain
     gain1: '0'
@@ -782,7 +782,7 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [768, 652.0]
+    coordinate: [832, 652.0]
     rotation: 0
     state: enabled
 - name: uhd_usrp_source_0
@@ -790,7 +790,7 @@ blocks:
   parameters:
     affinity: ''
     alias: ''
-    ant0: ''
+    ant0: '"RX2"'
     ant1: ''
     ant10: ''
     ant11: ''
@@ -960,7 +960,7 @@ blocks:
     dc_offs_enb7: default
     dc_offs_enb8: default
     dc_offs_enb9: default
-    dev_addr: ''
+    dev_addr: addr=192.168.10.5
     dev_args: '""'
     gain0: rx_gain
     gain1: '0'
@@ -1218,7 +1218,7 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [880, 452.0]
+    coordinate: [952, 452.0]
     rotation: 180
     state: enabled
 - name: wifi_phy_hier_0
@@ -1261,4 +1261,4 @@ connections:
 
 metadata:
   file_format: 1
-  grc_version: v3.10.2.0-68-g62a7e451
+  grc_version: 3.10.9.2
