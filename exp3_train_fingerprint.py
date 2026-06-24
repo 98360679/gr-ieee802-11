@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
 """
-exp3_train_fingerprint.py — train the 6-device RF-fingerprint CNN from scratch
+exp3_train_fingerprint.py — train the RF-fingerprint CNN from scratch
 ────────────────────────────────────────────────────────────────────────────
 
 Trains FingerprintCNN (exp3_fp_model.py) on the captured frames in
-  /media/.../session12/processed/frames/frames_dev{1..6}.npz
-which are the validated segmentation of the raw session12/train captures
-(321 frames/device over runs 1-3, frame_len=15360, pre_roll=256, fs=5 MHz).
+  /media/.../session13/processed/frames/frames_dev{1..5}.npz
+which are the validated segmentation of the raw session13/train captures
+(frame_len=15360, pre_roll=256, fs=5 MHz; device/class count comes from
+exp3_fp_model.NUM_CLASSES).
 
 Split: runs 1+2 = train, run 3 = held-out validation (frame-level, no window
 leakage). Reports window accuracy and frame accuracy (majority vote over a
@@ -29,7 +30,7 @@ from torch.utils.data import TensorDataset, DataLoader
 from exp3_fp_model import (FingerprintCNN, frame_to_windows, iq_to_input,
                            n_params, NUM_CLASSES, DEVICE_NAMES, WIN, FS)
 
-DRIVE_PROC = "/media/cse-nghose-25/T9/Data/session12/processed"
+DRIVE_PROC = "/media/hlado2/T9/Data/session13/processed"
 FRAMES_DIR = os.path.join(DRIVE_PROC, "frames")
 SAVE_PT    = os.path.join(DRIVE_PROC, "fingerprint_cnn_retrained.pt")
 SAVE_JSON  = os.path.join(DRIVE_PROC, "fingerprint_cnn_retrained.json")
