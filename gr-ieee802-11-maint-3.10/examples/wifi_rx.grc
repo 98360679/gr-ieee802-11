@@ -230,6 +230,30 @@ blocks:
     coordinate: [8, 84.0]
     rotation: 0
     state: enabled
+- name: device
+  id: variable
+  parameters:
+    comment: 'capture label: clean_run / rx_frames go under device_<device>/'
+    value: '1'
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [104, 84.0]
+    rotation: 0
+    state: enabled
+- name: run_id
+  id: variable
+  parameters:
+    comment: 'capture run number within the current device'
+    value: '1'
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [104, 148.0]
+    rotation: 0
+    state: enabled
 - name: blocks_complex_to_mag_0
   id: blocks_complex_to_mag
   parameters:
@@ -360,7 +384,7 @@ blocks:
     alias: ''
     append: 'False'
     comment: ''
-    file: /media/nghoselab/T9/Data/session12/temp/clean.bin
+    file: "'/media/hlado2/T9/Data/session13/train/device_%d/clean_run_%d.bin' % (device, run_id)"
     type: complex
     unbuffered: 'False'
     vlen: '1'
@@ -370,7 +394,7 @@ blocks:
     bus_structure: null
     coordinate: [48, 420.0]
     rotation: 180
-    state: disabled
+    state: enabled
 - name: blocks_moving_average_xx_0
   id: blocks_moving_average_xx
   parameters:
@@ -523,6 +547,54 @@ blocks:
     bus_source: false
     bus_structure: null
     coordinate: [488, 748.0]
+    rotation: 0
+    state: enabled
+- name: frame_logger
+  id: epy_block
+  parameters:
+    _source_code: "\"\"\"\nframe_logger - append each decoded 802.11 frame (frame_id\
+      \ + payload)\nto a JSONL file for the closed-loop adversarial pipeline.\n\n\
+      The TX (exp3_wifi_tx.py) builds each MSDU as\n    b'FRID' + uint32_be(frame_id)\
+      \ + b'x'*filler\nand decode_mac publishes cons(meta, blob) where blob is the\
+      \ PSDU minus\nFCS (24-byte MAC header + MSDU). decode_mac drops CRC-failed frames,\
+      \ so\nevery record written here is a CRC-valid decode. A frame is \"ours\" iff\n\
+      its MSDU begins with the FRID magic.\n\"\"\"\n\nimport json\nimport struct\n\
+      import time\nimport pmt\nfrom gnuradio import gr\n\n\nclass blk(gr.basic_block):\n\
+      \    \"\"\"Log decoded frames (frame_id + payload_hex) to a JSONL file.\"\"\"\
+      \n\n    MAC_HDR_LEN = 24       # 802.11 data-frame header, stripped to reach\
+      \ the MSDU\n    MAGIC = b'FRID'        # MSDU marker: b'FRID' + uint32_be(frame_id)\
+      \ + b'x'*filler\n\n    def __init__(self, log_path='/tmp/rx_frames.jsonl'):\n\
+      \        gr.basic_block.__init__(self, name='frame_logger',\n              \
+      \                  in_sig=[], out_sig=[])\n        self._log_path = log_path\n\
+      \        self._n = 0\n        self._skipped = 0\n        self.message_port_register_in(pmt.intern('in'))\n\
+      \        self.set_msg_handler(pmt.intern('in'), self.handle)\n\n    def handle(self,\
+      \ msg):\n        try:\n            data = bytes(pmt.u8vector_elements(pmt.cdr(msg)))\n\
+      \        except Exception:\n            return\n        # MSDU = decoded frame\
+      \ minus the 24-byte MAC header.\n        msdu = data[self.MAC_HDR_LEN:]\n  \
+      \      # Keep only our TX frames (MSDU starts with FRID magic); drop ambient\
+      \ WiFi.\n        if msdu[:4] != self.MAGIC or len(msdu) < 8:\n            self._skipped\
+      \ += 1\n            print('[frame_logger] skip ambient (#%d skipped) len=%d'\n\
+      \                  % (self._skipped, len(data)))\n            return\n     \
+      \   frame_id = struct.unpack('>I', msdu[4:8])[0]\n        self._n += 1\n   \
+      \     rec = {\n            'seq': self._n,\n            't': time.time(),\n\
+      \            'frame_id': frame_id,\n            'len': len(data),\n        \
+      \    'payload_hex': data.hex(),\n        }\n        with open(self._log_path,\
+      \ 'a') as f:\n            f.write(json.dumps(rec) + '\\n')\n        print('[frame_logger]\
+      \ #%d id=%s len=%d -> %s'\n              % (self._n, frame_id, len(data), self._log_path))\n"
+    affinity: ''
+    alias: ''
+    comment: ''
+    log_path: "'/media/hlado2/T9/Data/session13/train/device_%d/rx_frames_run_%d.jsonl' % (device, run_id)"
+    maxoutbuf: '0'
+    minoutbuf: '0'
+  states:
+    _io_cache: ('frame_logger', 'blk', [('log_path', "'/tmp/rx_frames.jsonl'")], [('in',
+      'message', 1)], [], 'Log decoded frames (frame_id + payload_hex) to a JSONL
+      file.', [])
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [1304, 760.0]
     rotation: 0
     state: enabled
 - name: ieee802_11_decode_mac_0
@@ -1256,86 +1328,6 @@ blocks:
     bus_source: false
     bus_structure: null
     coordinate: [32, 216]
-    rotation: 0
-    state: enabled
-- name: frame_logger
-  id: epy_block
-  parameters:
-    _source_code: |
-      """
-      frame_logger - append each decoded 802.11 frame (frame_id + payload)
-      to a JSONL file for the closed-loop adversarial pipeline.
-
-      The TX (exp3_wifi_tx.py) builds each MSDU as
-          b'FRID' + uint32_be(frame_id) + b'x'*filler
-      and decode_mac publishes cons(meta, blob) where blob is the PSDU minus
-      FCS (24-byte MAC header + MSDU). decode_mac drops CRC-failed frames, so
-      every record written here is a CRC-valid decode. A frame is "ours" iff
-      its MSDU begins with the FRID magic.
-      """
-
-      import json
-      import struct
-      import time
-      import pmt
-      from gnuradio import gr
-
-
-      class blk(gr.basic_block):
-          """Log decoded frames (frame_id + payload_hex) to a JSONL file."""
-
-          MAC_HDR_LEN = 24       # 802.11 data-frame header, stripped to reach the MSDU
-          MAGIC = b'FRID'        # MSDU marker: b'FRID' + uint32_be(frame_id) + b'x'*filler
-
-          def __init__(self, log_path='/tmp/rx_frames.jsonl'):
-              gr.basic_block.__init__(self, name='frame_logger',
-                                      in_sig=[], out_sig=[])
-              self._log_path = log_path
-              self._n = 0
-              self._skipped = 0
-              self.message_port_register_in(pmt.intern('in'))
-              self.set_msg_handler(pmt.intern('in'), self.handle)
-
-          def handle(self, msg):
-              try:
-                  data = bytes(pmt.u8vector_elements(pmt.cdr(msg)))
-              except Exception:
-                  return
-              # MSDU = decoded frame minus the 24-byte MAC header.
-              msdu = data[self.MAC_HDR_LEN:]
-              # Keep only our TX frames (MSDU starts with FRID magic); drop ambient WiFi.
-              if msdu[:4] != self.MAGIC or len(msdu) < 8:
-                  self._skipped += 1
-                  print('[frame_logger] skip ambient (#%d skipped) len=%d'
-                        % (self._skipped, len(data)))
-                  return
-              frame_id = struct.unpack('>I', msdu[4:8])[0]
-              self._n += 1
-              rec = {
-                  'seq': self._n,
-                  't': time.time(),
-                  'frame_id': frame_id,
-                  'len': len(data),
-                  'payload_hex': data.hex(),
-              }
-              with open(self._log_path, 'a') as f:
-                  f.write(json.dumps(rec) + '\n')
-              print('[frame_logger] #%d id=%s len=%d -> %s'
-                    % (self._n, frame_id, len(data), self._log_path))
-    affinity: ''
-    alias: ''
-    comment: ''
-    log_path: '''/tmp/rx_frames.jsonl'''
-    maxoutbuf: '0'
-    minoutbuf: '0'
-  states:
-    _io_cache: ('frame_logger', 'blk', [('log_path', "'/tmp/rx_frames.jsonl'")], [('in',
-      'message', 1)], [], 'Log decoded frames (frame_id + payload_hex) to a JSONL file.',
-      [])
-    bus_sink: false
-    bus_source: false
-    bus_structure: null
-    coordinate: [1328, 880.0]
     rotation: 0
     state: enabled
 
