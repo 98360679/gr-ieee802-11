@@ -116,7 +116,7 @@ blocks:
       5900000000.0, 5910000000.0, 5920000000.0]'
     orient: Qt.QVBoxLayout
     type: real
-    value: '2437000000.0'
+    value: '2450000000.0'
     widget: combo_box
   states:
     bus_sink: false
@@ -287,6 +287,7 @@ blocks:
     maxoutbuf: '0'
     minoutbuf: '0'
     num_ports: '1'
+    showports: 'False'
     type: complex
     vlen: '1'
   states:
@@ -306,6 +307,7 @@ blocks:
     maxoutbuf: '0'
     minoutbuf: '0'
     num_ports: '1'
+    showports: 'False'
     type: complex
     vlen: '1'
   states:
@@ -368,7 +370,7 @@ blocks:
     bus_structure: null
     coordinate: [48, 420.0]
     rotation: 180
-    state: true
+    state: disabled
 - name: blocks_moving_average_xx_0
   id: blocks_moving_average_xx
   parameters:
@@ -523,23 +525,6 @@ blocks:
     coordinate: [488, 748.0]
     rotation: 0
     state: enabled
-- name: foo_wireshark_connector_0
-  id: foo_wireshark_connector
-  parameters:
-    affinity: ''
-    alias: ''
-    comment: ''
-    debug: 'False'
-    maxoutbuf: '0'
-    minoutbuf: '0'
-    tech: '127'
-  states:
-    bus_sink: false
-    bus_source: false
-    bus_structure: null
-    coordinate: [1472, 948.0]
-    rotation: 180
-    state: disabled
 - name: ieee802_11_decode_mac_0
   id: ieee802_11_decode_mac
   parameters:
@@ -1012,7 +997,7 @@ blocks:
     dc_offs_enb7: default
     dc_offs_enb8: default
     dc_offs_enb9: default
-    dev_addr: '"addr=192.168.10.5"'
+    dev_addr: '"serial=3256204"'
     dev_args: '""'
     gain0: rx_gain
     gain1: '0'
@@ -1273,6 +1258,86 @@ blocks:
     coordinate: [32, 216]
     rotation: 0
     state: enabled
+- name: frame_logger
+  id: epy_block
+  parameters:
+    _source_code: |
+      """
+      frame_logger - append each decoded 802.11 frame (frame_id + payload)
+      to a JSONL file for the closed-loop adversarial pipeline.
+
+      The TX (exp3_wifi_tx.py) builds each MSDU as
+          b'FRID' + uint32_be(frame_id) + b'x'*filler
+      and decode_mac publishes cons(meta, blob) where blob is the PSDU minus
+      FCS (24-byte MAC header + MSDU). decode_mac drops CRC-failed frames, so
+      every record written here is a CRC-valid decode. A frame is "ours" iff
+      its MSDU begins with the FRID magic.
+      """
+
+      import json
+      import struct
+      import time
+      import pmt
+      from gnuradio import gr
+
+
+      class blk(gr.basic_block):
+          """Log decoded frames (frame_id + payload_hex) to a JSONL file."""
+
+          MAC_HDR_LEN = 24       # 802.11 data-frame header, stripped to reach the MSDU
+          MAGIC = b'FRID'        # MSDU marker: b'FRID' + uint32_be(frame_id) + b'x'*filler
+
+          def __init__(self, log_path='/tmp/rx_frames.jsonl'):
+              gr.basic_block.__init__(self, name='frame_logger',
+                                      in_sig=[], out_sig=[])
+              self._log_path = log_path
+              self._n = 0
+              self._skipped = 0
+              self.message_port_register_in(pmt.intern('in'))
+              self.set_msg_handler(pmt.intern('in'), self.handle)
+
+          def handle(self, msg):
+              try:
+                  data = bytes(pmt.u8vector_elements(pmt.cdr(msg)))
+              except Exception:
+                  return
+              # MSDU = decoded frame minus the 24-byte MAC header.
+              msdu = data[self.MAC_HDR_LEN:]
+              # Keep only our TX frames (MSDU starts with FRID magic); drop ambient WiFi.
+              if msdu[:4] != self.MAGIC or len(msdu) < 8:
+                  self._skipped += 1
+                  print('[frame_logger] skip ambient (#%d skipped) len=%d'
+                        % (self._skipped, len(data)))
+                  return
+              frame_id = struct.unpack('>I', msdu[4:8])[0]
+              self._n += 1
+              rec = {
+                  'seq': self._n,
+                  't': time.time(),
+                  'frame_id': frame_id,
+                  'len': len(data),
+                  'payload_hex': data.hex(),
+              }
+              with open(self._log_path, 'a') as f:
+                  f.write(json.dumps(rec) + '\n')
+              print('[frame_logger] #%d id=%s len=%d -> %s'
+                    % (self._n, frame_id, len(data), self._log_path))
+    affinity: ''
+    alias: ''
+    comment: ''
+    log_path: '''/tmp/rx_frames.jsonl'''
+    maxoutbuf: '0'
+    minoutbuf: '0'
+  states:
+    _io_cache: ('frame_logger', 'blk', [('log_path', "'/tmp/rx_frames.jsonl'")], [('in',
+      'message', 1)], [], 'Log decoded frames (frame_id + payload_hex) to a JSONL file.',
+      [])
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [1328, 880.0]
+    rotation: 0
+    state: enabled
 
 connections:
 - [blocks_complex_to_mag_0, '0', blocks_divide_xx_0, '0']
@@ -1291,8 +1356,7 @@ connections:
 - [blocks_tag_share_0, '0', blocks_throttle_0, '0']
 - [blocks_tags_strobe_0, '0', blocks_tag_share_0, '1']
 - [fft_vxx_0, '0', ieee802_11_frame_equalizer_0, '0']
-- [foo_wireshark_connector_0, '0', blocks_file_sink_0, '0']
-- [ieee802_11_decode_mac_0, out, foo_wireshark_connector_0, in]
+- [ieee802_11_decode_mac_0, out, frame_logger, in]
 - [ieee802_11_decode_mac_0, out, ieee802_11_parse_mac_0, in]
 - [ieee802_11_frame_equalizer_0, '0', ieee802_11_decode_mac_0, '0']
 - [ieee802_11_frame_equalizer_0, symbols, pdu_pdu_to_tagged_stream_0, pdus]
@@ -1308,3 +1372,4 @@ connections:
 
 metadata:
   file_format: 1
+  grc_version: 3.10.9.2

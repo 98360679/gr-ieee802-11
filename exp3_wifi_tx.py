@@ -29,6 +29,7 @@ import sys
 import os
 import time
 import signal
+import struct
 import argparse
 import itertools
 
@@ -159,11 +160,14 @@ class exp3_wifi_tx(gr.top_block):
 
     # ── Frame generation ──────────────────────────────────────────────
     def send_frame(self):
-        frame_id = next(self.frame_id_gen)
-        frame_id_str = f"{frame_id:04d}"
-        print(f"frame ID: {frame_id_str}")
-        payload = 'A' * 20 + frame_id_str + 'A' * (PDU_LENGTH - 24)
-        payload_bytes = payload.encode('utf-8')
+        # MSDU layout (parsed by the RX frame_logger in wifi_rx.grc):
+        #   bytes 0..3  : b'FRID' magic
+        #   bytes 4..7  : uint32 big-endian frame_id
+        #   bytes 8..N  : 'x' filler  (total PDU_LENGTH bytes)
+        frame_id = next(self.frame_id_gen) & 0xFFFFFFFF
+        print(f"frame ID: {frame_id}")
+        payload_bytes = (b'FRID' + struct.pack('>I', frame_id) +
+                         b'x' * (PDU_LENGTH - 8))
         pdu = pmt.cons(pmt.PMT_NIL,
                        pmt.init_u8vector(len(payload_bytes),
                                          bytearray(payload_bytes)))
