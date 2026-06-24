@@ -53,8 +53,12 @@ def detect_bursts(path):
         env_parts.append(p.reshape(-1, ENV_WIN).mean(1))
     env = np.concatenate(env_parts)
 
+    # Threshold relative to the NOISE FLOOR (median): bursts are a low-duty,
+    # high-power minority, so the median window is pure noise. The old
+    # env.mean()*3 was inflated by burst energy and landed near each burst's
+    # peak, fragmenting frames below MIN_FULL_DUR (-> zero frames detected).
     floor  = np.median(env)
-    thresh = max(floor * 6, env.mean() * 3)
+    thresh = floor * 6
     active = env > thresh
 
     # ── Pass 2: group contiguous active windows into bursts ──
@@ -115,7 +119,7 @@ def main():
     for d in args.devices:
         dframes, drun, dstart, dpeak, ddur = [], [], [], [], []
         for r in args.runs:
-            path = os.path.join(args.root, f"Device_{d}", f"clean_run_{r}.bin")
+            path = os.path.join(args.root, f"device_{d}", f"clean_run_{r}.bin")
             if not os.path.exists(path):
                 print(f"  [dev{d} run{r}] MISSING {path}")
                 continue

@@ -91,10 +91,12 @@ def main():
     print(f"test_run={args.test_run}  val_frac={args.val_frac}\n")
 
     per_dev_counts = {}
+    devs_seen = set()
     for fp in files:
         z = np.load(fp)
         frames, run, dur = z['frames'], z['run'], z['dur']
         dev = int(z['device'])
+        devs_seen.add(dev)
         # active extent per frame = pre-roll + measured burst duration (+pad)
         active = np.minimum(PRE_ROLL + dur.astype(np.int64) + TAIL_PAD, frames.shape[1])
 
@@ -126,8 +128,10 @@ def main():
     Xva, yva, mva = build_split(val_recs,   L, args.eval_stride)
     Xte, yte, mte = build_split(test_recs,  L, args.eval_stride)
 
+    # class count is data-driven (max device id seen), not hardcoded to 6
+    n_dev = max(devs_seen)
     def dist(y):
-        return np.bincount(y, minlength=6).tolist()
+        return np.bincount(y, minlength=n_dev).tolist()
     print(f"  train windows: {len(ytr):6d}  per-class {dist(ytr)}")
     print(f"  val   windows: {len(yva):6d}  per-class {dist(yva)}")
     print(f"  test  windows: {len(yte):6d}  per-class {dist(yte)}")
@@ -138,7 +142,7 @@ def main():
              X_train=Xtr, y_train=ytr, m_train=mtr,
              X_val=Xva,   y_val=yva,   m_val=mva,
              X_test=Xte,  y_test=yte,  m_test=mte,
-             label_names=np.array([f"device_{i}" for i in range(1, 7)]),
+             label_names=np.array([f"device_{i}" for i in range(1, n_dev + 1)]),
              win=L, test_run=args.test_run,
              train_stride=args.train_stride, eval_stride=args.eval_stride)
     mb = os.path.getsize(out) / 1e6
