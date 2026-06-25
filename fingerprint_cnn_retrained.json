@@ -1,0 +1,18 @@
+{
+  "arch": "FingerprintCNN",
+  "num_classes": 5,
+  "fs": 5000000,
+  "win": 1024,
+  "preprocessing": "per-window unit-RMS, input [2,1024] I/Q",
+  "val_window_acc": 0.6943835015357613,
+  "val_frame_acc": 0.7393593681439228,
+  "epochs": 50,
+  "params": 123301,
+  "frames_per_device": {
+    "device_1": 1741,
+    "device_2": 1229,
+    "device_3": 1537,
+    "device_4": 1241,
+    "device_5": 1531
+  }
+}
