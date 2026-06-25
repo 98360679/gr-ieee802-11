@@ -94,7 +94,7 @@ def build_split(hop_train, hop_val, keep=None):
     return tr, va, counts
 
 
-def augment(xb, snr_lo=12.0, snr_hi=35.0):
+def augment(xb, snr_lo=20.0, snr_hi=40.0):
     """Channel-nuisance augmentation on a batch of [B,2,1024] unit-RMS IQ.
 
     Simulates the cross-run variation that makes run-3 differ from runs 1-2,
@@ -104,6 +104,11 @@ def augment(xb, snr_lo=12.0, snr_hi=35.0):
         per capture; the device's I/Q-imbalance fingerprint must survive it)
       * additive complex Gaussian noise at a random SNR in [snr_lo, snr_hi] dB
     Power/amplitude is already removed by unit-RMS, so we don't touch it.
+
+    Default SNR floor is 20 dB: a sweep showed an aggressive low-SNR floor
+    (12 dB) blurred the features separating similar radios (device_1 vs
+    device_5); softening it to 20-40 dB lifted device_5 frame acc 88% -> 94%
+    and overall 4-device frame acc 94.3% -> 95.0%.
     """
     B = xb.shape[0]
     dev = xb.device
@@ -129,9 +134,12 @@ def main():
                    help='comma-separated 1-based device ids to drop, e.g. "2"')
     p.add_argument('--aug', action='store_true',
                    help='channel-nuisance augmentation (phase rot + noise)')
+    p.add_argument('--snr-lo', type=float, default=20.0, help='aug noise SNR low')
+    p.add_argument('--snr-hi', type=float, default=40.0, help='aug noise SNR high')
     p.add_argument('--wd', type=float, default=0.0, help='weight decay')
     p.add_argument('--label-smooth', type=float, default=0.0)
     p.add_argument('--device', default='auto', help='auto|cpu|cuda')
+    p.add_argument('--tag', default='', help='extra filename suffix for sweeps')
     args = p.parse_args()
 
     if args.threads:
@@ -189,7 +197,7 @@ def main():
         for xb, yb in dl:
             xb = xb.to(dev); yb = yb.to(dev)
             if args.aug:
-                xb = augment(xb)
+                xb = augment(xb, args.snr_lo, args.snr_hi)
             opt.zero_grad()
             loss = lossf(model(xb), yb)
             loss.backward(); opt.step()
@@ -218,7 +226,7 @@ def main():
 
     # Tag output filenames when devices are excluded so the full 5-device model
     # (which the attack scripts load) is never silently overwritten.
-    tag = f"_{n_classes}dev" if drop else ""
+    tag = (f"_{n_classes}dev" if drop else "") + (f"_{args.tag}" if args.tag else "")
     def _tagged(path):
         base, ext = os.path.splitext(path)
         return base + tag + ext
