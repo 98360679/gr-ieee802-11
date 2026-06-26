@@ -335,7 +335,6 @@ blocks:
     maxoutbuf: '0'
     minoutbuf: '0'
     num_ports: '1'
-    showports: 'False'
     type: complex
     vlen: '1'
   states:
@@ -355,7 +354,6 @@ blocks:
     maxoutbuf: '0'
     minoutbuf: '0'
     num_ports: '1'
-    showports: 'False'
     type: complex
     vlen: '1'
   states:
@@ -1388,4 +1386,3 @@ connections:
 
 metadata:
   file_format: 1
-  grc_version: 3.10.9.2

@@ -27,6 +27,7 @@ Run (after training):
 """
 
 import os
+import json
 import argparse
 import numpy as np
 import torch
@@ -39,15 +40,58 @@ from exp3_train_fingerprint import load_frames, LOCAL_PT, SAVE_PT
 
 _EPS = 1e-12
 
+# The 4-device model (device_2 dropped) is the default attack target now; fall
+# back to the 5-class model, then the drive copy, if it isn't present locally.
+LOCAL_4DEV = os.path.splitext(LOCAL_PT)[0] + '_4dev.pt'
 
-def predict_frame(model, frame):
-    """Majority-vote device prediction + mean confidence for one frame."""
+
+def default_model():
+    for p in (LOCAL_4DEV, LOCAL_PT, SAVE_PT):
+        if os.path.exists(p):
+            return p
+    return LOCAL_PT
+
+
+def load_fp_model(model_path):
+    """Load a FingerprintCNN sized to the checkpoint, with the device<->class
+    label map taken from the model's sidecar JSON config.
+
+    The 4-device model remaps kept devices to contiguous class indices
+    (device_1->0, device_3->1, device_4->2, device_5->3), so we must NOT assume
+    the old 5-class `device_d -> d-1` rule. We read `class_labels` from
+    <model>.json when present; otherwise fall back to that identity rule.
+
+    Returns (model, n_classes, name_to_idx, idx_to_name).
+    """
+    state = torch.load(model_path, map_location='cpu')
+    n_classes = state['head.5.weight'].shape[0]        # final Linear rows
+    cfg_path = os.path.splitext(model_path)[0] + '.json'
+    name_to_idx = {}
+    if os.path.exists(cfg_path):
+        with open(cfg_path) as f:
+            name_to_idx = {k: int(v)
+                           for k, v in json.load(f).get('class_labels', {}).items()}
+    if not name_to_idx:                                # no/empty config -> 5-class identity
+        name_to_idx = {f'device_{i}': i - 1 for i in range(1, n_classes + 1)}
+    idx_to_name = {v: k for k, v in name_to_idx.items()}
+    model = FingerprintCNN(n_classes)
+    model.load_state_dict(state)
+    model.eval()
+    return model, n_classes, name_to_idx, idx_to_name
+
+
+def predict_frame(model, frame, n_classes=NUM_CLASSES):
+    """Majority-vote class prediction + mean confidence for one frame.
+
+    Returns the class INDEX (0..n_classes-1) the model voted, not a device id —
+    map it back through idx_to_name for display.
+    """
     w = frame_to_windows(frame, hop=WIN)
     x = torch.from_numpy(iq_to_input(w))
     with torch.no_grad():
         p = F.softmax(model(x), dim=1).numpy()
     votes = p.argmax(1)
-    dev = np.bincount(votes, minlength=NUM_CLASSES).argmax()
+    dev = np.bincount(votes, minlength=n_classes).argmax()
     return dev, p
 
 
@@ -94,54 +138,63 @@ def craft(model, frame, true_label, psr_db, steps, step_frac):
 
 def main():
     p = argparse.ArgumentParser()
-    p.add_argument('--device', type=int, default=1, help='target device 1..6 (true label)')
+    p.add_argument('--device', type=int, default=5,
+                   help='legit-TX device id; must be a class in --model '
+                        '(4-dev model: 1,3,4,5)')
     p.add_argument('--psr', type=float, default=-20.0, help='perturbation-to-signal ratio dB')
     p.add_argument('--steps', type=int, default=100)
     p.add_argument('--step-frac', type=float, default=0.1, help='PGD step as frac of budget')
     p.add_argument('--period-ms', type=float, default=50.0, help='OTA loop length')
-    p.add_argument('--model', default=LOCAL_PT if os.path.exists(LOCAL_PT) else SAVE_PT)
+    p.add_argument('--model', default=default_model(),
+                   help='fingerprint .pt to attack (default: 4-device model)')
     p.add_argument('--out-frame', default='/dev/shm/frame.bin')
     p.add_argument('--out-pert',  default='/dev/shm/perturbation.bin')
     p.add_argument('--eval-n', type=int, default=40, help='frames to measure fooling rate')
     a = p.parse_args()
 
-    model = FingerprintCNN(NUM_CLASSES)
-    model.load_state_dict(torch.load(a.model, map_location='cpu'))
-    model.eval()
-    true_label = a.device - 1
+    model, n_classes, name_to_idx, idx_to_name = load_fp_model(a.model)
+    name = f'device_{a.device}'
+    if name not in name_to_idx:
+        raise SystemExit(
+            f"{name} is not a class in {os.path.basename(a.model)} "
+            f"(classes: {sorted(name_to_idx)}). Pick a kept device.")
+    true_label = name_to_idx[name]
+    print(f"Model {os.path.basename(a.model)} ({n_classes} classes); "
+          f"legit TX {name} -> class {true_label}")
 
     frames, run = load_frames(a.device)
     # Use held-out run-3 frames; pick the most confident correctly-classified one.
     idx = np.where(run == 3)[0]
     best = None
     for i in idx:
-        dev, prob = predict_frame(model, frames[i])
+        dev, prob = predict_frame(model, frames[i], n_classes)
         if dev == true_label:
             conf = prob[:, true_label].mean()
             if best is None or conf > best[1]:
                 best = (i, conf)
     if best is None:
-        raise SystemExit(f"No correctly-classified run-3 frame for device {a.device}.")
+        raise SystemExit(f"No correctly-classified run-3 frame for {name}.")
     ti = best[0]
     target = frames[ti]
-    print(f"Target: device_{a.device} frame #{ti}  (clean conf {best[1]:.3f})")
+    print(f"Target: {name} frame #{ti}  (clean conf {best[1]:.3f})")
 
     delta, starts = craft(model, target, true_label, a.psr, a.steps, a.step_frac)
 
     # Verify on the crafted frame.
     pert_frame = target.copy(); pert_frame += delta
-    dev_clean, _ = predict_frame(model, target)
-    dev_adv, padv = predict_frame(model, pert_frame)
+    dev_clean, _ = predict_frame(model, target, n_classes)
+    dev_adv, padv = predict_frame(model, pert_frame, n_classes)
     win_pred = padv.argmax(1)
     flipped = (win_pred != true_label).mean()
-    print(f"  clean  -> device_{dev_clean+1}")
-    print(f"  perturbed -> device_{dev_adv+1}   (windows flipped {flipped*100:.0f}%)")
+    print(f"  clean  -> {idx_to_name.get(dev_clean, f'class{dev_clean}')}")
+    print(f"  perturbed -> {idx_to_name.get(dev_adv, f'class{dev_adv}')}   "
+          f"(windows flipped {flipped*100:.0f}%)")
 
     # Fooling rate over many run-3 frames using the SAME-budget per-frame PGD.
     n_ok = n_tot = 0
     for i in idx[:a.eval_n]:
         d, _ = craft(model, frames[i], true_label, a.psr, a.steps, a.step_frac)
-        dadv, _ = predict_frame(model, frames[i] + d)
+        dadv, _ = predict_frame(model, frames[i] + d, n_classes)
         n_ok += (dadv != true_label); n_tot += 1
     print(f"  per-frame PGD fooling rate @ PSR {a.psr} dB: {n_ok}/{n_tot} "
           f"= {n_ok/n_tot*100:.0f}%")

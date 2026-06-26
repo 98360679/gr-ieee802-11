@@ -35,8 +35,16 @@ MIN_FULL_DUR = 12000     # keep only bursts this long (≈ real preamble+payload
                          # frame ≈14600 samp); shorter bursts are ambient ACKs/noise
 
 
-def detect_bursts(path):
-    """Return list of (onset_sample, peak_power) for bursts in a complex64 file."""
+def detect_bursts(path, floor_pct=None):
+    """Return list of (onset_sample, peak_power) for bursts in a complex64 file.
+
+    floor_pct: if given, estimate the noise floor as that percentile of the
+    envelope instead of the median. The median assumes bursts are a <50%-duty
+    minority (median window = noise); that fails when the RX AGC pumps the silent
+    gaps up near frame power (median lands on the signal). A low percentile
+    (e.g. 20) recovers the true silence level in that case. Default (None) keeps
+    the median behavior used for the training-data extraction.
+    """
     nbytes = os.path.getsize(path)
     nsamp  = nbytes // 8                      # complex64 = 8 bytes
     mm = np.memmap(path, dtype=np.complex64, mode='r', shape=(nsamp,))
@@ -57,7 +65,7 @@ def detect_bursts(path):
     # high-power minority, so the median window is pure noise. The old
     # env.mean()*3 was inflated by burst energy and landed near each burst's
     # peak, fragmenting frames below MIN_FULL_DUR (-> zero frames detected).
-    floor  = np.median(env)
+    floor  = np.median(env) if floor_pct is None else np.percentile(env, floor_pct)
     thresh = floor * 6
     active = env > thresh
 
@@ -83,9 +91,9 @@ def detect_bursts(path):
     return bursts, nsamp, floor, thresh
 
 
-def extract_frames_for_file(path):
+def extract_frames_for_file(path, floor_pct=None):
     """Detect bursts and copy FRAME_LEN-sample windows out of the file."""
-    bursts, nsamp, floor, thresh = detect_bursts(path)
+    bursts, nsamp, floor, thresh = detect_bursts(path, floor_pct=floor_pct)
     mm = np.memmap(path, dtype=np.complex64, mode='r', shape=(nsamp,))
     frames, starts, peaks, durs = [], [], [], []
     for onset, peak, dur in bursts:

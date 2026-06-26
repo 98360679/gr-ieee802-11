@@ -28,7 +28,8 @@ import torch
 
 from exp3_fp_model import (FingerprintCNN, NUM_CLASSES, FRAME_LEN, PRE_ROLL,
                            ACTIVE, WIN, FS, _EPS)
-from exp3_make_perturbation import craft, predict_frame
+from exp3_make_perturbation import (craft, predict_frame, load_fp_model,
+                                    default_model)
 from exp3_train_fingerprint import LOCAL_PT, SAVE_PT
 
 
@@ -40,12 +41,11 @@ def main():
     p.add_argument('--psr', type=float, default=-20.0, help='perturbation-to-signal ratio dB')
     p.add_argument('--steps', type=int, default=100)
     p.add_argument('--step-frac', type=float, default=0.1)
-    p.add_argument('--model', default=LOCAL_PT if os.path.exists(LOCAL_PT) else SAVE_PT)
+    p.add_argument('--model', default=default_model(),
+                   help='fingerprint .pt to attack (default: 4-device model)')
     a = p.parse_args()
 
-    model = FingerprintCNN(NUM_CLASSES)
-    model.load_state_dict(torch.load(a.model, map_location='cpu'))
-    model.eval()
+    model, n_classes, name_to_idx, idx_to_name = load_fp_model(a.model)
 
     # ── load the deployed frame (the signal); keep its length L and amplitude ──
     fbin = np.fromfile(a.frame, dtype=np.complex64)
@@ -67,11 +67,12 @@ def main():
     model_frame = seg.astype(np.complex64)
 
     # Untargeted: push the CNN away from its CURRENT prediction on this frame.
-    dev_clean, _ = predict_frame(model, model_frame)
+    dev_clean, _ = predict_frame(model, model_frame, n_classes)
     true_label = int(dev_clean)
     print(f"frame={a.frame}  L={L}  burst_start={burst_start}  "
           f"model_off={model_off}")
-    print(f"CNN clean prediction: device_{dev_clean+1} (used as untargeted label)")
+    print(f"CNN clean prediction: {idx_to_name.get(dev_clean, f'class{dev_clean}')} "
+          f"(used as untargeted label)")
 
     delta_full, starts = craft(model, model_frame, true_label,
                                a.psr, a.steps, a.step_frac)
@@ -82,14 +83,14 @@ def main():
     pert.tofile(a.out_pert)
 
     # ── verify: prediction flip + achieved PSR over the active windows ──
-    dev_adv, padv = predict_frame(model, model_frame + delta_full)
+    dev_adv, padv = predict_frame(model, model_frame + delta_full, n_classes)
     flipped = (padv.argmax(1) != true_label).mean()
     act = slice(PRE_ROLL, PRE_ROLL + ACTIVE)
     sig_p = float(np.mean(np.abs(model_frame[act]) ** 2))
     prt_p = float(np.mean(np.abs(delta_full[act]) ** 2))
     achieved = 10 * np.log10((prt_p + _EPS) / (sig_p + _EPS))
 
-    print(f"  perturbed prediction: device_{dev_adv+1}  "
+    print(f"  perturbed prediction: {idx_to_name.get(dev_adv, f'class{dev_adv}')}  "
           f"(windows flipped {flipped*100:.0f}%)")
     print(f"  achieved PSR = {achieved:.2f} dB (target {a.psr})")
     print(f"Wrote {a.out_pert}  (length {L}, frame.bin untouched)")

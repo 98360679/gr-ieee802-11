@@ -1,0 +1,36 @@
+{
+  "arch": "FingerprintCNN",
+  "num_classes": 6,
+  "fs": 5000000,
+  "win": 1024,
+  "preprocessing": "per-window unit-RMS, input [2,1024] I/Q",
+  "val_window_acc": 0.8806216931216931,
+  "val_frame_acc": 0.933641975308642,
+  "epochs": 100,
+  "params": 123430,
+  "kept_devices": [
+    "device_1",
+    "device_2",
+    "device_3",
+    "device_4",
+    "device_5",
+    "device_6"
+  ],
+  "excluded_devices": [],
+  "class_labels": {
+    "device_1": 0,
+    "device_2": 1,
+    "device_3": 2,
+    "device_4": 3,
+    "device_5": 4,
+    "device_6": 5
+  },
+  "frames_per_device": {
+    "device_1": 332,
+    "device_2": 589,
+    "device_3": 335,
+    "device_4": 519,
+    "device_5": 362,
+    "device_6": 323
+  }
+}

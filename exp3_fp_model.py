@@ -28,8 +28,8 @@ FRAME_LEN  = 15360
 PRE_ROLL   = 256
 WIN        = 1024
 ACTIVE     = 14336            # 14 * 1024, active span after pre_roll
-NUM_CLASSES = 5
-DEVICE_NAMES = [f"device_{i}" for i in range(1, 6)]
+NUM_CLASSES = 6
+DEVICE_NAMES = [f"device_{i}" for i in range(1, 7)]
 
 _EPS = 1e-12
 
