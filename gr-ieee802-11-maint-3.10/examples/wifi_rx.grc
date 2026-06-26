@@ -63,6 +63,18 @@ blocks:
     coordinate: [296, 12.0]
     rotation: 0
     state: enabled
+- name: device
+  id: variable
+  parameters:
+    comment: 'capture label: clean_run / rx_frames go under device_<device>/'
+    value: '1'
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [104, 84.0]
+    rotation: 0
+    state: enabled
 - name: freq
   id: variable_qtgui_chooser
   parameters:
@@ -155,6 +167,18 @@ blocks:
     coordinate: [176, 12.0]
     rotation: 0
     state: enabled
+- name: run_id
+  id: variable
+  parameters:
+    comment: capture run number within the current device
+    value: '1'
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [104, 148.0]
+    rotation: 0
+    state: enabled
 - name: rx_gain
   id: variable_qtgui_range
   parameters:
@@ -230,30 +254,6 @@ blocks:
     coordinate: [8, 84.0]
     rotation: 0
     state: enabled
-- name: device
-  id: variable
-  parameters:
-    comment: 'capture label: clean_run / rx_frames go under device_<device>/'
-    value: '1'
-  states:
-    bus_sink: false
-    bus_source: false
-    bus_structure: null
-    coordinate: [104, 84.0]
-    rotation: 0
-    state: enabled
-- name: run_id
-  id: variable
-  parameters:
-    comment: 'capture run number within the current device'
-    value: '1'
-  states:
-    bus_sink: false
-    bus_source: false
-    bus_structure: null
-    coordinate: [104, 148.0]
-    rotation: 0
-    state: enabled
 - name: blocks_complex_to_mag_0
   id: blocks_complex_to_mag
   parameters:
@@ -311,7 +311,6 @@ blocks:
     maxoutbuf: '0'
     minoutbuf: '0'
     num_ports: '1'
-    showports: 'False'
     type: complex
     vlen: '1'
   states:
@@ -331,7 +330,6 @@ blocks:
     maxoutbuf: '0'
     minoutbuf: '0'
     num_ports: '1'
-    showports: 'False'
     type: complex
     vlen: '1'
   states:
@@ -384,7 +382,8 @@ blocks:
     alias: ''
     append: 'False'
     comment: ''
-    file: "'/media/hlado2/T9/Data/session13/train/device_%d/clean_run_%d.bin' % (device, run_id)"
+    file: '''/media/hlado2/T9/Data/session13/train/device_%d/clean_run_%d.bin'' %
+      (device, run_id)'
     type: complex
     unbuffered: 'False'
     vlen: '1'
@@ -584,7 +583,8 @@ blocks:
     affinity: ''
     alias: ''
     comment: ''
-    log_path: "'/media/hlado2/T9/Data/session13/train/device_%d/rx_frames_run_%d.jsonl' % (device, run_id)"
+    log_path: '''/media/hlado2/T9/Data/session13/train/device_%d/rx_frames_run_%d.jsonl''
+      % (device, run_id)'
     maxoutbuf: '0'
     minoutbuf: '0'
   states:
@@ -1069,7 +1069,7 @@ blocks:
     dc_offs_enb7: default
     dc_offs_enb8: default
     dc_offs_enb9: default
-    dev_addr: '"serial=3256204"'
+    dev_addr: '"serial=325936A"'
     dev_args: '""'
     gain0: rx_gain
     gain1: '0'
@@ -1364,4 +1364,3 @@ connections:
 
 metadata:
   file_format: 1
-  grc_version: 3.10.9.2
