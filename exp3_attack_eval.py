@@ -59,8 +59,12 @@ def main():
                     help='true legit device id (e.g. 6)')
     ap.add_argument('--model', default=LOCAL_PT,
                     help='fingerprint .pt (default: canonical retrained 6-class model)')
+    ap.add_argument('--floor-pct', type=float, default=20.0,
+                    help='robust noise-floor percentile for the burst detector '
+                         '(attack recaptures need ~20 due to RX AGC; 0/None=median)')
     ap.add_argument('--out', default='attack_eval.json')
     a = ap.parse_args()
+    floor_pct = a.floor_pct if a.floor_pct and a.floor_pct > 0 else None
 
     model, n_classes, name_to_idx, idx_to_name = load_fp_model(a.model)
     name = f'device_{a.device}'
@@ -71,11 +75,12 @@ def main():
     print(f"Model {os.path.basename(a.model)} ({n_classes} classes); "
           f"legit TX {name} -> class {true}\n")
 
-    report = {'model': os.path.basename(a.model), 'device': name}
+    report = {'model': os.path.basename(a.model), 'device': name,
+              'floor_pct': floor_pct}
     if a.clean:
-        _, fc = eval_file(model, n_classes, a.clean)
+        _, fc = eval_file(model, n_classes, a.clean, floor_pct=floor_pct)
         report['clean'] = summarize('clean', fc, true, idx_to_name, n_classes)
-    _, fa = eval_file(model, n_classes, a.attacked)
+    _, fa = eval_file(model, n_classes, a.attacked, floor_pct=floor_pct)
     report['attacked'] = summarize('attacked', fa, true, idx_to_name, n_classes)
 
     if a.clean:

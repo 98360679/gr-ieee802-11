@@ -26,10 +26,28 @@ import argparse
 import numpy as np
 
 C64 = np.complex64
+FS = 5_000_000          # sample rate (Hz)
+FRAME_PERIOD = 15661    # build_adv_replay burst_len (one frame, packed)
 
 
 def _tag(psr):
     return f"m{abs(int(psr))}" if psr < 0 else "0"
+
+
+def insert_gaps(x, frame_period, gap):
+    """Insert `gap` zero samples after every `frame_period`-sample frame, so a
+    packed (continuous) replay becomes gapped — the power-based frame extractor
+    can then segment it (frames separated by silence, like the clean captures).
+    Applied identically to ch0 and ch1 so they stay sample-aligned."""
+    if gap <= 0:
+        return x
+    nf = len(x) // frame_period
+    out = np.zeros(nf * (frame_period + gap), dtype=C64)
+    for i in range(nf):
+        src = x[i * frame_period:(i + 1) * frame_period]
+        dst = i * (frame_period + gap)
+        out[dst:dst + frame_period] = src
+    return out
 
 
 def main():
@@ -44,8 +62,14 @@ def main():
                    help='target PSRs in dB')
     p.add_argument('--headroom', type=float, default=0.95,
                    help='max |amp| after the common DAC-safe scale (default 0.95)')
+    p.add_argument('--gap-ms', type=float, default=0.0,
+                   help='zero gap (ms) inserted after each frame so the recapture '
+                        'is gapped and the power extractor can segment it (0=packed)')
+    p.add_argument('--frame-period', type=int, default=FRAME_PERIOD,
+                   help='frame burst_len in samples (default 15661)')
     p.add_argument('--out', required=True, help='output directory')
     a = p.parse_args()
+    gap = int(round(a.gap_ms * 1e-3 * FS))
 
     os.makedirs(a.out, exist_ok=True)
     frame = np.fromfile(a.frame, dtype=C64)
@@ -65,10 +89,15 @@ def main():
     print(f"global peak (ch0/ch1) {gmax:.3f} -> common DAC-safe scale {k:.4f} "
           f"(target peak {a.headroom})\n")
 
-    (frame * k).astype(C64).tofile(os.path.join(a.out, 'adv_frame.bin'))
+    fr_out = insert_gaps((frame * k).astype(C64), a.frame_period, gap)
+    fr_out.tofile(os.path.join(a.out, 'adv_frame.bin'))
+    if gap:
+        nf = len(frame) // a.frame_period
+        print(f"gap: {gap} samples ({a.gap_ms:.0f} ms) after each of {nf} frames "
+              f"-> period {a.frame_period + gap} samp ({(a.frame_period+gap)/FS*1e3:.1f} ms)\n")
     print(f"{'PSR':>5} {'ch1 peak':>9}  file")
     for psr in a.psr:
-        out = (scaled[psr] * k).astype(C64)
+        out = insert_gaps((scaled[psr] * k).astype(C64), a.frame_period, gap)
         fn = f"adv_perturbation_psr_{_tag(psr)}.bin"
         out.tofile(os.path.join(a.out, fn))
         print(f"{psr:>5.0f} {float(np.max(np.abs(out))):>9.3f}  {fn}")
