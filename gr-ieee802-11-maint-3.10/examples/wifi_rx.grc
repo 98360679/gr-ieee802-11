@@ -63,6 +63,30 @@ blocks:
     coordinate: [296, 12.0]
     rotation: 0
     state: enabled
+- name: device_id
+  id: variable
+  parameters:
+    comment: ''
+    value: '6'
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [1160, 24.0]
+    rotation: 0
+    state: enabled
+- name: eps
+  id: variable
+  parameters:
+    comment: ''
+    value: '0'
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [1592, 48.0]
+    rotation: 0
+    state: enabled
 - name: freq
   id: variable_qtgui_chooser
   parameters:
@@ -155,6 +179,30 @@ blocks:
     coordinate: [176, 12.0]
     rotation: 0
     state: enabled
+- name: psr
+  id: variable
+  parameters:
+    comment: ''
+    value: '0'
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [1456, 32.0]
+    rotation: 0
+    state: enabled
+- name: run_id
+  id: variable
+  parameters:
+    comment: ''
+    value: '1'
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [1328, 24.0]
+    rotation: 0
+    state: enabled
 - name: rx_gain
   id: variable_qtgui_range
   parameters:
@@ -228,30 +276,6 @@ blocks:
     bus_source: false
     bus_structure: null
     coordinate: [8, 84.0]
-    rotation: 0
-    state: enabled
-- name: device
-  id: variable
-  parameters:
-    comment: 'capture label: clean_run / rx_frames go under device_<device>/'
-    value: '1'
-  states:
-    bus_sink: false
-    bus_source: false
-    bus_structure: null
-    coordinate: [104, 84.0]
-    rotation: 0
-    state: enabled
-- name: run_id
-  id: variable
-  parameters:
-    comment: 'capture run number within the current device'
-    value: '1'
-  states:
-    bus_sink: false
-    bus_source: false
-    bus_structure: null
-    coordinate: [104, 148.0]
     rotation: 0
     state: enabled
 - name: blocks_complex_to_mag_0
@@ -384,7 +408,7 @@ blocks:
     alias: ''
     append: 'False'
     comment: ''
-    file: "'/media/hlado2/T9/Data/session13/train/device_%d/clean_run_%d.bin' % (device, run_id)"
+    file: '''/media/hlado2/T9/Data/session13/clean/device_%d//clean_run_%d.bin''%(device_id,run_id)'
     type: complex
     unbuffered: 'False'
     vlen: '1'
@@ -584,7 +608,7 @@ blocks:
     affinity: ''
     alias: ''
     comment: ''
-    log_path: "'/media/hlado2/T9/Data/session13/train/device_%d/rx_frames_run_%d.jsonl' % (device, run_id)"
+    log_path: '''/media/hlado2/T9/Data/session13/clean/device_%d/rx_frames_run_%d.jsonl''%(device_id,run_id)'
     maxoutbuf: '0'
     minoutbuf: '0'
   states:
@@ -1069,7 +1093,7 @@ blocks:
     dc_offs_enb7: default
     dc_offs_enb8: default
     dc_offs_enb9: default
-    dev_addr: '"serial=3256204"'
+    dev_addr: '"serial=325936A"'
     dev_args: '""'
     gain0: rx_gain
     gain1: '0'
