@@ -1,0 +1,79 @@
+{
+  "args": {
+    "tx_bin": "data/raw_iq/device_5/tx_device5.bin",
+    "tx_log": "data/raw_iq/device_5/tx_log_device5.txt",
+    "weights": "models/sarp_cvnn_5ghz_v3/extracted/model.weights.h5",
+    "device_label": 4,
+    "epsilons": [
+      0.0,
+      0.5,
+      1.0,
+      2.0,
+      5.0,
+      10.0
+    ],
+    "attack": "fgsm",
+    "pgd_steps": 10,
+    "num_classes": 7,
+    "output_dir": "data/perturbed_v3/",
+    "max_frames": null
+  },
+  "results": {
+    "0.0": {
+      "avg_ber": 0.0,
+      "max_ber": 0.0,
+      "avg_pert_power_ratio": 0.0,
+      "n_frames": 500,
+      "output_file": "data/perturbed_v3/tx_perturbed_eps_0.00.bin",
+      "file_size_mb": 58.244,
+      "time_s": 13.453627586364746
+    },
+    "0.5": {
+      "avg_ber": 0.0,
+      "max_ber": 0.0,
+      "avg_pert_power_ratio": 0.006345717236399651,
+      "n_frames": 500,
+      "output_file": "data/perturbed_v3/tx_perturbed_eps_0.50.bin",
+      "file_size_mb": 58.244,
+      "time_s": 55.045461893081665
+    },
+    "1.0": {
+      "avg_ber": 0.0,
+      "max_ber": 0.0,
+      "avg_pert_power_ratio": 0.025382868945598602,
+      "n_frames": 500,
+      "output_file": "data/perturbed_v3/tx_perturbed_eps_1.00.bin",
+      "file_size_mb": 58.244,
+      "time_s": 52.277156352996826
+    },
+    "2.0": {
+      "avg_ber": 0.0,
+      "max_ber": 0.0,
+      "avg_pert_power_ratio": 0.10153147578239441,
+      "n_frames": 500,
+      "output_file": "data/perturbed_v3/tx_perturbed_eps_2.00.bin",
+      "file_size_mb": 58.244,
+      "time_s": 52.02952480316162
+    },
+    "5.0": {
+      "avg_ber": 0.0,
+      "max_ber": 0.0,
+      "avg_pert_power_ratio": 0.6345717906951904,
+      "n_frames": 500,
+      "output_file": "data/perturbed_v3/tx_perturbed_eps_5.00.bin",
+      "file_size_mb": 58.244,
+      "time_s": 52.31595993041992
+    },
+    "10.0": {
+      "avg_ber": 0.9381770244821093,
+      "max_ber": 0.9576271186440678,
+      "avg_pert_power_ratio": 2.5382871627807617,
+      "n_frames": 500,
+      "output_file": "data/perturbed_v3/tx_perturbed_eps_10.00.bin",
+      "file_size_mb": 58.244,
+      "time_s": 52.41647410392761
+    }
+  },
+  "frame_count": 500,
+  "tx_bin_samples": 7280500
+}

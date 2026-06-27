@@ -1,0 +1,103 @@
+{
+  "attack": "pgd",
+  "pgd_steps": 200,
+  "args": {
+    "tx_bin": "data/raw_iq/device_5/tx_device5.bin",
+    "tx_log": "data/raw_iq/device_5/tx_log_device5.txt",
+    "weights": "models/sarp_cvnn_5ghz_v3/extracted/model.weights.h5",
+    "device_label": 4,
+    "epsilons": [
+      0.01,
+      0.05,
+      0.1,
+      0.15,
+      0.2,
+      0.3,
+      0.5
+    ],
+    "attack": "pgd",
+    "pgd_steps": 200,
+    "num_classes": 7,
+    "max_frames": 20,
+    "output_dir": "results/td_pgd/"
+  },
+  "results": {
+    "0.01": {
+      "avg_acc_before": 1.0,
+      "avg_acc_after": 1.0,
+      "avg_ber": 0.009438559322033897,
+      "max_ber": 0.012570621468926554,
+      "avg_pert_power": 0.00019714962400030345,
+      "n_frames": 20,
+      "time_s": 172.50084400177002,
+      "wifi_ok": "FAIL",
+      "output_file": "results/td_pgd/tx_perturbed_pgd_eps_0.0100.bin"
+    },
+    "0.05": {
+      "avg_acc_before": 1.0,
+      "avg_acc_after": 1.0,
+      "avg_ber": 0.02896892655367232,
+      "max_ber": 0.031991525423728816,
+      "avg_pert_power": 0.004704768769443035,
+      "n_frames": 20,
+      "time_s": 174.34952688217163,
+      "wifi_ok": "FAIL",
+      "output_file": "results/td_pgd/tx_perturbed_pgd_eps_0.0500.bin"
+    },
+    "0.1": {
+      "avg_acc_before": 1.0,
+      "avg_acc_after": 1.0,
+      "avg_ber": 0.053979519774011296,
+      "max_ber": 0.058898305084745764,
+      "avg_pert_power": 0.01808401197195053,
+      "n_frames": 20,
+      "time_s": 170.4024362564087,
+      "wifi_ok": "FAIL",
+      "output_file": "results/td_pgd/tx_perturbed_pgd_eps_0.1000.bin"
+    },
+    "0.15": {
+      "avg_acc_before": 1.0,
+      "avg_acc_after": 0.9938775510204081,
+      "avg_ber": 0.07682556497175143,
+      "max_ber": 0.08100282485875707,
+      "avg_pert_power": 0.03842703253030777,
+      "n_frames": 20,
+      "time_s": 174.0267779827118,
+      "wifi_ok": "FAIL",
+      "output_file": "results/td_pgd/tx_perturbed_pgd_eps_0.1500.bin"
+    },
+    "0.2": {
+      "avg_acc_before": 1.0,
+      "avg_acc_after": 0.14387755102040817,
+      "avg_ber": 0.09836511299435027,
+      "max_ber": 0.10529661016949153,
+      "avg_pert_power": 0.06386838108301163,
+      "n_frames": 20,
+      "time_s": 171.70530486106873,
+      "wifi_ok": "FAIL",
+      "output_file": "results/td_pgd/tx_perturbed_pgd_eps_0.2000.bin"
+    },
+    "0.3": {
+      "avg_acc_before": 1.0,
+      "avg_acc_after": 0.0,
+      "avg_ber": 0.12903601694915257,
+      "max_ber": 0.13545197740112994,
+      "avg_pert_power": 0.11832829564809799,
+      "n_frames": 20,
+      "time_s": 172.975768327713,
+      "wifi_ok": "FAIL",
+      "output_file": "results/td_pgd/tx_perturbed_pgd_eps_0.3000.bin"
+    },
+    "0.5": {
+      "avg_acc_before": 1.0,
+      "avg_acc_after": 0.0,
+      "avg_ber": 0.13805437853107344,
+      "max_ber": 0.14392655367231638,
+      "avg_pert_power": 0.18704335391521454,
+      "n_frames": 20,
+      "time_s": 174.2967345714569,
+      "wifi_ok": "FAIL",
+      "output_file": "results/td_pgd/tx_perturbed_pgd_eps_0.5000.bin"
+    }
+  }
+}

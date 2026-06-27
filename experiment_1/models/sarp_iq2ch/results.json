@@ -1,0 +1,10 @@
+{
+  "test_accuracy": 0.9449523687362671,
+  "test_loss": 0.2785716950893402,
+  "num_classes": 7,
+  "input_shape": [
+    288,
+    2
+  ],
+  "architecture": "sarp_iq2ch"
+}

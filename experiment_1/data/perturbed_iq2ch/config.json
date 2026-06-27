@@ -1,0 +1,22 @@
+{
+  "tx_bin": "data/tx.bin",
+  "tx_log": "data/tx-log.txt",
+  "rx_bin": "data/af.bin",
+  "rx_log": "data/rx-log.txt",
+  "weights": "models/sarp_iq2ch/best_model.keras",
+  "device_label": 6,
+  "mode": "untargeted",
+  "target_label": null,
+  "epsilons": [
+    0.0,
+    0.05,
+    0.1,
+    0.2,
+    0.3
+  ],
+  "attack": "both",
+  "pgd_steps": 40,
+  "max_frames": 258,
+  "num_classes": 7,
+  "output_dir": "data/perturbed_iq2ch/"
+}

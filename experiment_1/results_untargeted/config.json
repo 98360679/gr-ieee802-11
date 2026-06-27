@@ -1,0 +1,22 @@
+{
+  "weights": "models/sarp_iq2ch/best_model.keras",
+  "npz": "data/sarp_iq2ch.npz",
+  "device_label": 4,
+  "num_classes": 7,
+  "mode": "untargeted",
+  "target_label": null,
+  "epsilon": [
+    0.0,
+    0.01,
+    0.05,
+    0.1,
+    0.2,
+    0.3,
+    0.5
+  ],
+  "pgd_steps": 200,
+  "trials": 5,
+  "n_traces": 500,
+  "batch_size": 100,
+  "output_dir": "./results_untargeted"
+}

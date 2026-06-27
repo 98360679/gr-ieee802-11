@@ -1,0 +1,5 @@
+Script started on 2026-05-25 13:22:24-05:00 [TERM="xterm-256color" TTY="/dev/pts/0" COLUMNS="111" LINES="27"]
+bash: /home/nghoselab/miniconda3/envs/py31/lib/libtinfo.so.6: no version information available (required by bash)
+python3: can't open file '/home/nghoselab/research/adversarial/wifi_rx_perturb_v2.py': [Errno 2] No such file or directory
+
+Script done on 2026-05-25 13:22:24-05:00 [COMMAND_EXIT_CODE="2"]

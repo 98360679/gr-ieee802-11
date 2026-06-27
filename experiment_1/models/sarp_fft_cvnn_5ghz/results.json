@@ -1,0 +1,24 @@
+{
+  "model": "cvnn_small",
+  "norm_mode": "rms",
+  "trace_length": "original",
+  "test_accuracy": 0.3442857265472412,
+  "augmentation": false,
+  "class_weights": false,
+  "epochs_trained": 68,
+  "args": {
+    "data": "data/sarp_fft_7devices_5k.npz",
+    "output": "models/sarp_fft_cvnn_5ghz/",
+    "epochs": 100,
+    "batch_size": 64,
+    "lr": 0.001,
+    "augment": false,
+    "augment_factor": 2,
+    "dropout": 0.3,
+    "class_weights": false,
+    "trace_length": null,
+    "model": "cvnn_small",
+    "norm": "rms",
+    "test_session": 3
+  }
+}
