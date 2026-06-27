@@ -63,16 +63,28 @@ blocks:
     coordinate: [296, 12.0]
     rotation: 0
     state: enabled
-- name: device
+- name: device_id
   id: variable
   parameters:
-    comment: 'capture label: clean_run / rx_frames go under device_<device>/'
-    value: '1'
+    comment: ''
+    value: '6'
   states:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [104, 84.0]
+    coordinate: [1160, 24.0]
+    rotation: 0
+    state: enabled
+- name: eps
+  id: variable
+  parameters:
+    comment: ''
+    value: '0'
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [1592, 48.0]
     rotation: 0
     state: enabled
 - name: freq
@@ -167,16 +179,28 @@ blocks:
     coordinate: [176, 12.0]
     rotation: 0
     state: enabled
+- name: psr
+  id: variable
+  parameters:
+    comment: ''
+    value: '0'
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [1456, 32.0]
+    rotation: 0
+    state: enabled
 - name: run_id
   id: variable
   parameters:
-    comment: capture run number within the current device
+    comment: ''
     value: '1'
   states:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [104, 148.0]
+    coordinate: [1328, 24.0]
     rotation: 0
     state: enabled
 - name: rx_gain
@@ -382,8 +406,7 @@ blocks:
     alias: ''
     append: 'False'
     comment: ''
-    file: '''/media/hlado2/T9/Data/session13/train/device_%d/clean_run_%d.bin'' %
-      (device, run_id)'
+    file: '''/media/hlado2/T9/Data/session13/clean/device_%d//clean_run_%d.bin''%(device_id,run_id)'
     type: complex
     unbuffered: 'False'
     vlen: '1'
@@ -583,8 +606,7 @@ blocks:
     affinity: ''
     alias: ''
     comment: ''
-    log_path: '''/media/hlado2/T9/Data/session13/train/device_%d/rx_frames_run_%d.jsonl''
-      % (device, run_id)'
+    log_path: '''/media/hlado2/T9/Data/session13/clean/device_%d/rx_frames_run_%d.jsonl''%(device_id,run_id)'
     maxoutbuf: '0'
     minoutbuf: '0'
   states:
@@ -595,6 +617,73 @@ blocks:
     bus_source: false
     bus_structure: null
     coordinate: [1304, 760.0]
+    rotation: 0
+    state: enabled
+- name: link_stats
+  id: epy_block
+  parameters:
+    _source_code: "\"\"\"\nlink_stats — live decode-rate / loss readout for the FRID\
+      \ closed loop\n─────────────────────────────────────────────────────────────────────\n\
+      Drop this into wifi_rx.grc as a GRC **Python Block** (Embedded Python Block),\n\
+      and wire  decode_mac 'out'  ->  this block's 'in'  (same source as frame_logger).\n\
+      \nWhy decode-rate, not BER: decode_mac only emits CRC-VALID frames on 'out',\
+      \ and a\nCRC-valid frame is error-free — so live BER off this port is always\
+      \ ~0 and\nuseless. Instead we exploit that the TX stamps SEQUENTIAL frame_ids\
+      \ (FRID): the\nfraction of the transmitted id-range we actually decode is the\
+      \ real link-quality\nsignal. Tune rx_gain to MAXIMIZE the \"decode-rate now\"\
+      \ number.\n\nPrints every `report_sec`:\n  decode-rate now  : decoded / id-advance\
+      \ over the LAST interval  (the tuning knob)\n  cum              : unique decoded\
+      \ / full id span               (overall)\n  fps              : CRC-valid frames\
+      \ per second\n  ambient-skip     : non-FRID frames seen (other WiFi / false\
+      \ syncs) — high = noisy\n\nGRC: id `link_stats`, one message input port 'in',\
+      \ no outputs. Param: report_sec.\n\"\"\"\nimport time\nimport struct\nimport\
+      \ pmt\nfrom gnuradio import gr\n\n\nclass blk(gr.basic_block):\n    MAC_HDR_LEN\
+      \ = 24            # 802.11 data-frame header before the MSDU\n    MAGIC = b'FRID'\
+      \            # MSDU marker: b'FRID' + uint32_be(frame_id) + 'x'*fill\n\n   \
+      \ def __init__(self, report_sec=2.0):\n        gr.basic_block.__init__(self,\
+      \ name='link_stats', in_sig=[], out_sig=[])\n        self.report_sec = float(report_sec)\n\
+      \        self.ids = set()           # unique frame_ids decoded\n        self.n\
+      \ = 0                 # total CRC-valid FRID frames\n        self.skipped =\
+      \ 0           # non-FRID frames (ambient / false sync)\n        self.id_min\
+      \ = None\n        self.id_max = None\n        # interval bookkeeping for the\
+      \ \"now\" rate\n        self.t_last = time.time()\n        self.n_last = 0\n\
+      \        self.id_max_last = None\n        self.message_port_register_in(pmt.intern('in'))\n\
+      \        self.set_msg_handler(pmt.intern('in'), self.handle)\n\n    def handle(self,\
+      \ msg):\n        try:\n            data = bytes(pmt.u8vector_elements(pmt.cdr(msg)))\n\
+      \        except Exception:\n            return\n        msdu = data[self.MAC_HDR_LEN:]\n\
+      \        if msdu[:4] != self.MAGIC or len(msdu) < 8:\n            self.skipped\
+      \ += 1          # not ours: ambient WiFi or a false decode\n            return\n\
+      \        fid = struct.unpack('>I', msdu[4:8])[0]\n        self.ids.add(fid)\n\
+      \        self.n += 1\n        if self.id_min is None or fid < self.id_min:\n\
+      \            self.id_min = fid\n        if self.id_max is None or fid > self.id_max:\n\
+      \            self.id_max = fid\n\n        now = time.time()\n        if now\
+      \ - self.t_last >= self.report_sec and self.id_max is not None:\n          \
+      \  # recent interval: how many ids advanced vs how many we decoded\n       \
+      \     base = self.id_max_last if self.id_max_last is not None else self.id_min\n\
+      \            d_span = self.id_max - base\n            d_dec = self.n - self.n_last\n\
+      \            recent = min(100.0, 100.0 * d_dec / d_span) if d_span > 0 else\
+      \ 0.0\n            # cumulative\n            span = self.id_max - self.id_min\
+      \ + 1\n            cum = 100.0 * len(self.ids) / span if span else 0.0\n   \
+      \         fps = d_dec / (now - self.t_last)\n            print('[link_stats]\
+      \ decode-rate now %5.1f%%   cum %5.1f%% (%d/%d)   '\n                  '%5.1f\
+      \ fps   ambient-skip %d'\n                  % (recent, cum, len(self.ids), span,\
+      \ fps, self.skipped))\n            self.t_last = now\n            self.n_last\
+      \ = self.n\n            self.id_max_last = self.id_max\n"
+    affinity: ''
+    alias: ''
+    comment: ''
+    report_sec: '2.0'
+    maxoutbuf: '0'
+    minoutbuf: '0'
+  states:
+    _io_cache: ('link_stats', 'blk', [('report_sec', '2.0')], [('in', 'message', 1)],
+      [], '', [])
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate:
+    - 1304
+    - 900.0
     rotation: 0
     state: enabled
 - name: ieee802_11_decode_mac_0
@@ -1350,6 +1439,7 @@ connections:
 - [fft_vxx_0, '0', ieee802_11_frame_equalizer_0, '0']
 - [ieee802_11_decode_mac_0, out, frame_logger, in]
 - [ieee802_11_decode_mac_0, out, ieee802_11_parse_mac_0, in]
+- [ieee802_11_decode_mac_0, out, link_stats, in]
 - [ieee802_11_frame_equalizer_0, '0', ieee802_11_decode_mac_0, '0']
 - [ieee802_11_frame_equalizer_0, symbols, pdu_pdu_to_tagged_stream_0, pdus]
 - [ieee802_11_sync_long_0, '0', blocks_stream_to_vector_0, '0']

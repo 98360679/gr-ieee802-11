@@ -72,7 +72,7 @@ _POPCOUNT = np.array([bin(i).count('1') for i in range(256)], dtype=np.int64)
 
 class ber_rx(gr.top_block):
     """Stock gr-ieee802-11 receive chain on a file, decode_mac in debug mode."""
-    def __init__(self, path):
+    def __init__(self, path, chan_est=CHAN_EST):
         gr.top_block.__init__(self, "Exp3 BER RX", catch_exceptions=True)
         window_size, sync_length = WINDOW_SIZE, SYNC_LENGTH
 
@@ -81,7 +81,7 @@ class ber_rx(gr.top_block):
         self.sync_short = ieee802_11.sync_short(0.56, 2, False, False)
         self.sync_long = ieee802_11.sync_long(sync_length, False, False)
         self.equalizer = ieee802_11.frame_equalizer(
-            ieee802_11.Equalizer(CHAN_EST), FREQ, EQ_BANDWIDTH, False, False)
+            ieee802_11.Equalizer(chan_est), FREQ, EQ_BANDWIDTH, False, False)
         # debug=True -> print_output() dumps EVERY completed frame, pre-CRC-drop.
         self.decode = ieee802_11.decode_mac(False, True)
 
@@ -217,6 +217,8 @@ def main():
     p.add_argument('--tag', default='capture')
     p.add_argument('--json', default=None, help='write metrics JSON here')
     p.add_argument('--save-dump', default=None, help='keep the raw decode dump')
+    p.add_argument('--chan-est', type=int, default=CHAN_EST,
+                   help='channel estimator: 0=LS 1=LMS 2=COMB 3=STA (default %(default)s)')
     a = p.parse_args()
 
     nsamp = os.path.getsize(a.file) // 8
@@ -231,7 +233,7 @@ def main():
     with open(dump_path, 'w') as f:
         os.dup2(f.fileno(), 1)
         try:
-            tb = ber_rx(a.file)
+            tb = ber_rx(a.file, chan_est=a.chan_est)
             tb.run()                    # file_source(repeat=False) -> ends at EOF
         finally:
             sys.stdout.flush()
