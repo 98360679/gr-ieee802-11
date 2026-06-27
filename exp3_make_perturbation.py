@@ -95,8 +95,12 @@ def predict_frame(model, frame, n_classes=NUM_CLASSES):
     return dev, p
 
 
-def craft(model, frame, true_label, psr_db, steps, step_frac):
-    """Untargeted per-frame PGD. Returns delta over the FULL frame (complex)."""
+def craft(model, frame, true_label, psr_db, steps, step_frac, target_label=None):
+    """Per-frame PGD. Returns delta over the FULL frame (complex).
+
+    target_label=None -> UNTARGETED: ascend CE(true_label), push off the true class.
+    target_label=k    -> TARGETED:   descend CE(k), pull toward class k.
+    Both stay inside the same per-window PSR L2 ball."""
     # Non-overlapping inference windows over the active region.
     lo = PRE_ROLL
     starts = list(range(lo, lo + ACTIVE - WIN + 1, WIN))      # 14 windows
@@ -106,7 +110,12 @@ def craft(model, frame, true_label, psr_db, steps, step_frac):
     sig_norm = torch.sqrt((sig.real**2 + sig.imag**2).sum(1) + _EPS)   # [W]
     budget = (10.0 ** (psr_db / 20.0)) * sig_norm              # ||delta_w||_2
 
-    y = torch.full((len(starts),), true_label, dtype=torch.long)
+    if target_label is not None:
+        y = torch.full((len(starts),), target_label, dtype=torch.long)
+        sign = -1.0                                            # descend toward target
+    else:
+        y = torch.full((len(starts),), true_label, dtype=torch.long)
+        sign = +1.0                                            # ascend off the true class
     d = torch.zeros(len(starts), WIN, 2)                       # [W,1024,2] I/Q
     d.normal_(0, 1e-3); d.requires_grad_(True)
 
@@ -118,12 +127,12 @@ def craft(model, frame, true_label, psr_db, steps, step_frac):
         if d.grad is not None:
             d.grad.zero_()
         logits = model(windows_input(d))
-        loss = F.cross_entropy(logits, y)                      # maximize -> ascend
+        loss = F.cross_entropy(logits, y)
         loss.backward()
         with torch.no_grad():
             g = d.grad
             gnorm = g.flatten(1).norm(dim=1).clamp_min(_EPS)
-            d += (step_frac * budget / gnorm).view(-1, 1, 1) * g   # ascent step
+            d += sign * (step_frac * budget / gnorm).view(-1, 1, 1) * g   # PGD step
             # Project each window's delta back into its PSR L2 ball.
             dn = d.flatten(1).norm(dim=1)
             scale = torch.clamp(budget / dn.clamp_min(_EPS), max=1.0)
@@ -141,6 +150,9 @@ def main():
     p.add_argument('--device', type=int, default=5,
                    help='legit-TX device id; must be a class in --model '
                         '(4-dev model: 1,3,4,5)')
+    p.add_argument('--target', type=int, default=None,
+                   help='targeted attack: push --device toward this device id '
+                        '(must also be a class in --model). Omit = untargeted.')
     p.add_argument('--psr', type=float, default=-20.0, help='perturbation-to-signal ratio dB')
     p.add_argument('--steps', type=int, default=100)
     p.add_argument('--step-frac', type=float, default=0.1, help='PGD step as frac of budget')
@@ -159,8 +171,18 @@ def main():
             f"{name} is not a class in {os.path.basename(a.model)} "
             f"(classes: {sorted(name_to_idx)}). Pick a kept device.")
     true_label = name_to_idx[name]
+    target_label = None
+    if a.target is not None:
+        tname = f'device_{a.target}'
+        if tname not in name_to_idx:
+            raise SystemExit(
+                f"target {tname} is not a class in {os.path.basename(a.model)} "
+                f"(classes: {sorted(name_to_idx)}).")
+        target_label = name_to_idx[tname]
+    mode = (f"TARGETED -> device_{a.target} (class {target_label})"
+            if target_label is not None else "UNTARGETED")
     print(f"Model {os.path.basename(a.model)} ({n_classes} classes); "
-          f"legit TX {name} -> class {true_label}")
+          f"legit TX {name} -> class {true_label}   [{mode}]")
 
     frames, run = load_frames(a.device)
     # Use held-out run-3 frames; pick the most confident correctly-classified one.
@@ -178,7 +200,8 @@ def main():
     target = frames[ti]
     print(f"Target: {name} frame #{ti}  (clean conf {best[1]:.3f})")
 
-    delta, starts = craft(model, target, true_label, a.psr, a.steps, a.step_frac)
+    delta, starts = craft(model, target, true_label, a.psr, a.steps,
+                          a.step_frac, target_label)
 
     # Verify on the crafted frame.
     pert_frame = target.copy(); pert_frame += delta
@@ -191,13 +214,20 @@ def main():
           f"(windows flipped {flipped*100:.0f}%)")
 
     # Fooling rate over many run-3 frames using the SAME-budget per-frame PGD.
-    n_ok = n_tot = 0
+    # Untargeted: any flip off the true class. Targeted: landing ON the target.
+    n_ok = n_hit = n_tot = 0
     for i in idx[:a.eval_n]:
-        d, _ = craft(model, frames[i], true_label, a.psr, a.steps, a.step_frac)
+        d, _ = craft(model, frames[i], true_label, a.psr, a.steps,
+                     a.step_frac, target_label)
         dadv, _ = predict_frame(model, frames[i] + d, n_classes)
-        n_ok += (dadv != true_label); n_tot += 1
+        n_ok += (dadv != true_label)
+        n_hit += (target_label is not None and dadv == target_label)
+        n_tot += 1
     print(f"  per-frame PGD fooling rate @ PSR {a.psr} dB: {n_ok}/{n_tot} "
-          f"= {n_ok/n_tot*100:.0f}%")
+          f"= {n_ok/n_tot*100:.0f}% (off {name})")
+    if target_label is not None:
+        print(f"  per-frame TARGET-HIT rate (-> device_{a.target}): "
+              f"{n_hit}/{n_tot} = {n_hit/n_tot*100:.0f}%")
 
     # ── Write OTA files: unit-RMS frame + PSR-scaled delta, padded to L ──
     L = int(round(a.period_ms * 1e-3 * FS))

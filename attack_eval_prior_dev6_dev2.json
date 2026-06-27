@@ -1,0 +1,20 @@
+{
+  "_note": "Prior single OTA capture result, preserved before the 2026-06-27 session13 PSR re-run overwrote attack_eval_psr_m30.json. This was an ad-hoc capture saved under the m30 name (3212 frames), NOT a clean -30 dB sweep point. Strong device_6 -> device_2 fooling (~48%), contrasting with the 2026-06-27 re-run sweep which showed <=5% fooling at every PSR.",
+  "model": "fingerprint_cnn_retrained.pt",
+  "device": "device_6",
+  "floor_pct": 20.0,
+  "attacked": {
+    "frames": 3212,
+    "acc": 0.5168119551681195,
+    "fooling": 0.4831880448318805,
+    "dist": {
+      "device_1": 194,
+      "device_2": 1322,
+      "device_3": 15,
+      "device_4": 21,
+      "device_5": 0,
+      "device_6": 1660
+    },
+    "dominant_target": "device_2"
+  }
+}
