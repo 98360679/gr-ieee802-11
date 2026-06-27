@@ -42,6 +42,7 @@ public:
           d_frame_complete(true)
     {
         message_port_register_out(pmt::mp("out"));
+        message_port_register_out(pmt::mp("failed"));
     }
 
     int general_work(int noutput_items,
@@ -142,7 +143,21 @@ public:
         boost::crc_32_type result;
         result.process_bytes(out_bytes + 2, d_frame.psdu_size);
         if (result.checksum() != 558161692) {
-            dout << "checksum wrong -- dropping" << std::endl;
+            dout << "checksum wrong -- publishing on 'failed'" << std::endl;
+            // Keep the errored frame (decoded bits are in out_bytes) so BER can
+            // be computed against the known payload. Same blob layout as 'out'
+            // (PSDU minus the 4-byte FCS); tagged crc_ok=false. Guard against a
+            // bogus psdu_size from a corrupted SIGNAL field: psdu_size - 4 would
+            // underflow size_t and make make_blob try to allocate ~SIZE_MAX.
+            if (d_frame.psdu_size >= 4) {
+                pmt::pmt_t fmeta =
+                    pmt::dict_add(d_meta, pmt::mp("crc_ok"), pmt::PMT_F);
+                fmeta = pmt::dict_add(
+                    fmeta, pmt::mp("dlt"), pmt::from_long(LINKTYPE_IEEE802_11));
+                pmt::pmt_t fblob =
+                    pmt::make_blob(out_bytes + 2, d_frame.psdu_size - 4);
+                message_port_pub(pmt::mp("failed"), pmt::cons(fmeta, fblob));
+            }
             return;
         }
 
@@ -155,6 +170,7 @@ public:
         pmt::pmt_t blob = pmt::make_blob(out_bytes + 2, d_frame.psdu_size - 4);
         d_meta =
             pmt::dict_add(d_meta, pmt::mp("dlt"), pmt::from_long(LINKTYPE_IEEE802_11));
+        d_meta = pmt::dict_add(d_meta, pmt::mp("crc_ok"), pmt::PMT_T);
 
         message_port_pub(pmt::mp("out"), pmt::cons(d_meta, blob));
     }

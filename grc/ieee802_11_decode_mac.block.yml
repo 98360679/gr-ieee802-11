@@ -27,6 +27,9 @@ outputs:
 -   domain: message
     id: out
     optional: true
+-   domain: message
+    id: failed
+    optional: true
 
 templates:
     imports: import ieee802_11
