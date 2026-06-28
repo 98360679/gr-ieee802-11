@@ -64,13 +64,13 @@ def collect(args):
     return items
 
 
-def eval_file(model, n_classes, path, floor_pct=None):
+def eval_file(model, n_classes, path, floor_pct=None, thr_mult=6.0):
     """Per-window predictions (flat) and per-frame voted class for one capture.
 
     floor_pct: robust noise-floor percentile for the burst detector (use ~20 for
     attack recaptures where the RX AGC pumps the silent gaps up; None = median,
     as for the clean training-style captures)."""
-    frames = extract_frames_for_file(path, floor_pct=floor_pct)[0]
+    frames = extract_frames_for_file(path, floor_pct=floor_pct, thr_mult=thr_mult)[0]
     win_preds, frame_preds = [], []
     for fr in frames:
         w = frame_to_windows(fr, hop=WIN)              # non-overlapping (val rule)

@@ -35,7 +35,7 @@ MIN_FULL_DUR = 12000     # keep only bursts this long (≈ real preamble+payload
                          # frame ≈14600 samp); shorter bursts are ambient ACKs/noise
 
 
-def detect_bursts(path, floor_pct=None):
+def detect_bursts(path, floor_pct=None, thr_mult=6.0):
     """Return list of (onset_sample, peak_power) for bursts in a complex64 file.
 
     floor_pct: if given, estimate the noise floor as that percentile of the
@@ -66,7 +66,8 @@ def detect_bursts(path, floor_pct=None):
     # env.mean()*3 was inflated by burst energy and landed near each burst's
     # peak, fragmenting frames below MIN_FULL_DUR (-> zero frames detected).
     floor  = np.median(env) if floor_pct is None else np.percentile(env, floor_pct)
-    thresh = floor * 6
+    thresh = floor * thr_mult        # lower thr_mult (e.g. 2-3) for low-SNR captures
+                                     # whose frames fragment under the default *6
     active = env > thresh
 
     # ── Pass 2: group contiguous active windows into bursts ──
@@ -91,9 +92,9 @@ def detect_bursts(path, floor_pct=None):
     return bursts, nsamp, floor, thresh
 
 
-def extract_frames_for_file(path, floor_pct=None):
+def extract_frames_for_file(path, floor_pct=None, thr_mult=6.0):
     """Detect bursts and copy FRAME_LEN-sample windows out of the file."""
-    bursts, nsamp, floor, thresh = detect_bursts(path, floor_pct=floor_pct)
+    bursts, nsamp, floor, thresh = detect_bursts(path, floor_pct=floor_pct, thr_mult=thr_mult)
     mm = np.memmap(path, dtype=np.complex64, mode='r', shape=(nsamp,))
     frames, starts, peaks, durs = [], [], [], []
     for onset, peak, dur in bursts:
