@@ -28,7 +28,9 @@ def main():
     p.add_argument('--device', type=int, default=6)
     p.add_argument('--target', type=int, default=4)
     p.add_argument('--untargeted', action='store_true',
-                   help='untargeted PGD (push off device_<device>) instead of targeted')
+                   help='pure untargeted PGD (ascend CE on true) — alignment-fragile')
+    p.add_argument('--runner-up', action='store_true',
+                   help='robust untargeted: per frame, target the model nearest wrong class')
     p.add_argument('--psr', type=float, default=-20.0)
     p.add_argument('--steps', type=int, default=150)
     p.add_argument('--n-eot', type=int, default=12)
@@ -51,8 +53,9 @@ def main():
     model, nc, n2i, i2n = load_fp_model(a.model)
     true, tgt = n2i[f'device_{a.device}'], n2i[f'device_{a.target}']
     target_label = None if a.untargeted else tgt
-    mi = 1 if a.untargeted else 0          # hit_under: [1]=off-true (untargeted), [0]=target-hit
-    mode = (f"UNTARGETED off device_{a.device}" if a.untargeted
+    mi = 1 if (a.untargeted or a.runner_up) else 0   # [1]=off-true, [0]=target-hit
+    mode = ("UNTARGETED off device_%d" % a.device if a.untargeted
+            else "RUNNER-UP (per-frame nearest wrong class)" if a.runner_up
             else f"device_{a.device}->device_{a.target}")
     os.makedirs(a.out, exist_ok=True)
     print(f"{a.model}: {mode}  PSR {a.psr}  "
@@ -70,7 +73,12 @@ def main():
         if n_done >= a.max_frames:
             break
         fr = frames[j % len(frames)]           # per-id delta; frames near-identical, EOT makes each robust
-        d = craft_eot(model, fr, true, target_label, a.psr, 'cpu',
+        if a.runner_up:                        # auto-target this frame's nearest wrong class
+            _, prob = predict_frame(model, fr, nc)
+            mp = prob.mean(0).copy(); mp[true] = -1.0; tl = int(mp.argmax())
+        else:
+            tl = target_label
+        d = craft_eot(model, fr, true, tl, a.psr, 'cpu',
                       a.steps, n_eot=a.n_eot, shift=a.shift, phase_deg=a.phase)
         bare = d[PRE_ROLL:PRE_ROLL + ACTIVE].astype(C64)   # data-region delta for build_adv_replay
         bare.tofile(os.path.join(a.out, f"{fid}.bin"))     # named by frame_id
@@ -85,7 +93,7 @@ def main():
     H = np.array(hits) if hits else np.zeros((0, 3))
     print(f"\ncrafted {n_done} per-frame EOT deltas -> {a.out}/*.bin")
     if len(H):
-        lbl = f"off device_{a.device}" if a.untargeted else f"->device_{a.target}"
+        lbl = f"off device_{a.device}" if (a.untargeted or a.runner_up) else f"->device_{a.target}"
         print(f"  {lbl}:  nominal {H[:,0].mean()*100:.0f}%   "
               f"@1-sample {H[:,1].mean()*100:.0f}%   @90deg {H[:,2].mean()*100:.0f}%")
     print("Feed to build_adv_replay: --pert-dir "
