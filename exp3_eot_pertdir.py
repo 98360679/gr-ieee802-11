@@ -27,24 +27,35 @@ def main():
     p.add_argument('--model', default='fingerprint_cnn_ft20260627.pt')
     p.add_argument('--device', type=int, default=6)
     p.add_argument('--target', type=int, default=4)
+    p.add_argument('--untargeted', action='store_true',
+                   help='untargeted PGD (push off device_<device>) instead of targeted')
     p.add_argument('--psr', type=float, default=-20.0)
     p.add_argument('--steps', type=int, default=150)
     p.add_argument('--n-eot', type=int, default=12)
     p.add_argument('--shift', type=float, default=1.5)
     p.add_argument('--phase', type=float, default=90.0)
     p.add_argument('--max-frames', type=int, default=10000)
-    p.add_argument('--ids-csv', default='/media/nghoselab/T91/Data/session13/train/6_27_2026/device_6/frame_index_run_1.csv',
-                   help='TX frame_index CSV; outputs are named <frame_id>.bin for build_adv_replay --pert-glob {id}.bin')
+    p.add_argument('--ids-csv', default='/media/nghoselab/T9/Data/session13/ota_dev6/eot_t4_ids.txt',
+                   help='TX frame ids: a frame_index CSV (frame_id column) OR a plain one-id-per-line '
+                        'file. Outputs are named <frame_id>.bin for build_adv_replay --pert-glob {id}.bin')
     p.add_argument('--out', default='/media/nghoselab/T9/Data/session13/ota_dev6/eot_t4_pertdir')
     a = p.parse_args()
-    import csv
-    ids = [int(r['frame_id']) for r in csv.DictReader(open(a.ids_csv))]
+    import csv, re
+    txt = open(a.ids_csv).read()
+    if 'frame_id' in txt.splitlines()[0]:                       # CSV with header
+        ids = [int(r['frame_id']) for r in csv.DictReader(open(a.ids_csv))]
+    else:                                                       # plain one-int-per-line
+        ids = [int(t) for t in re.findall(r'\d+', txt)]
     print(f"{len(ids)} TX frame_ids to cover (range {min(ids)}..{max(ids)})")
 
     model, nc, n2i, i2n = load_fp_model(a.model)
     true, tgt = n2i[f'device_{a.device}'], n2i[f'device_{a.target}']
+    target_label = None if a.untargeted else tgt
+    mi = 1 if a.untargeted else 0          # hit_under: [1]=off-true (untargeted), [0]=target-hit
+    mode = (f"UNTARGETED off device_{a.device}" if a.untargeted
+            else f"device_{a.device}->device_{a.target}")
     os.makedirs(a.out, exist_ok=True)
-    print(f"{a.model}: device_{a.device}->device_{a.target}  PSR {a.psr}  "
+    print(f"{a.model}: {mode}  PSR {a.psr}  "
           f"EOT shift±{a.shift}/phase±{a.phase}  -> {a.out}")
 
     allf = extract_frames_for_file(a.capture)[0]
@@ -59,13 +70,13 @@ def main():
         if n_done >= a.max_frames:
             break
         fr = frames[j % len(frames)]           # per-id delta; frames near-identical, EOT makes each robust
-        d = craft_eot(model, fr, true, tgt, a.psr, 'cpu',
+        d = craft_eot(model, fr, true, target_label, a.psr, 'cpu',
                       a.steps, n_eot=a.n_eot, shift=a.shift, phase_deg=a.phase)
         bare = d[PRE_ROLL:PRE_ROLL + ACTIVE].astype(C64)   # data-region delta for build_adv_replay
         bare.tofile(os.path.join(a.out, f"{fid}.bin"))     # named by frame_id
-        h0 = hit_under(model, fr, d, true, tgt, nc)[0]
-        h1 = hit_under(model, fr, d, true, tgt, nc, tau=1.0)[0]
-        hp = hit_under(model, fr, d, true, tgt, nc, deg=90)[0]
+        h0 = hit_under(model, fr, d, true, tgt, nc)[mi]
+        h1 = hit_under(model, fr, d, true, tgt, nc, tau=1.0)[mi]
+        hp = hit_under(model, fr, d, true, tgt, nc, deg=90)[mi]
         hits.append((h0, h1, hp))
         n_ok += h0; n_done += 1
         if n_done % 10 == 0:
@@ -74,7 +85,8 @@ def main():
     H = np.array(hits) if hits else np.zeros((0, 3))
     print(f"\ncrafted {n_done} per-frame EOT deltas -> {a.out}/*.bin")
     if len(H):
-        print(f"  ->device_{a.target} hit:  nominal {H[:,0].mean()*100:.0f}%   "
+        lbl = f"off device_{a.device}" if a.untargeted else f"->device_{a.target}"
+        print(f"  {lbl}:  nominal {H[:,0].mean()*100:.0f}%   "
               f"@1-sample {H[:,1].mean()*100:.0f}%   @90deg {H[:,2].mean()*100:.0f}%")
     print("Feed to build_adv_replay: --pert-dir "
           f"{a.out} --pert-glob '{{id}}.bin'  (with the TX frame.bin + frame_index.csv + ids)")

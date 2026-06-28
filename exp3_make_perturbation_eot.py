@@ -44,7 +44,9 @@ def frac_shift(x, tau):
 
 def craft_eot(model, frame, true_label, target_label, psr_db, dev,
               steps=150, step_frac=0.06, n_eot=8, shift=1.5, phase_deg=180.0):
-    """Targeted EOT-PGD. Returns delta over the FULL frame (complex)."""
+    """EOT-PGD. target_label=k -> TARGETED (descend CE toward k); target_label=None
+    -> UNTARGETED (ascend CE on true_label, push off the true class). Returns delta
+    over the FULL frame (complex)."""
     sig = torch.from_numpy(frame.astype(np.complex64)).to(dev)
     act = sig[PRE_ROLL:PRE_ROLL + ACTIVE]                  # [ACTIVE] complex
     sig_w = act.reshape(NW, WIN)
@@ -53,7 +55,10 @@ def craft_eot(model, frame, true_label, target_label, psr_db, dev,
 
     d = torch.zeros(ACTIVE, 2, device=dev)
     d.normal_(0, 1e-3); d.requires_grad_(True)
-    y = torch.full((NW,), target_label, dtype=torch.long, device=dev)
+    if target_label is None:                                # untargeted: ascend CE(true)
+        y = torch.full((NW,), true_label, dtype=torch.long, device=dev); sign = 1.0
+    else:                                                   # targeted: descend CE(target)
+        y = torch.full((NW,), target_label, dtype=torch.long, device=dev); sign = -1.0
     ph_max = np.deg2rad(phase_deg)
 
     def project(d):
@@ -80,7 +85,7 @@ def craft_eot(model, frame, true_label, target_label, psr_db, dev,
             gw = d.grad.reshape(NW, WIN, 2)                 # [NW,WIN,2]
             gnorm = gw.flatten(1).norm(dim=1).clamp_min(_EPS)   # [NW]
             step = (step_frac * budget / gnorm).view(NW, 1, 1) * gw   # [NW,WIN,2]
-            d -= step.reshape(ACTIVE, 2)                    # descend toward target
+            d += sign * step.reshape(ACTIVE, 2)            # untargeted ascend / targeted descend
             d.copy_(project(d))
 
     delta_full = np.zeros(FRAME_LEN, dtype=np.complex64)
