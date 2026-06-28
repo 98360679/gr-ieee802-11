@@ -88,8 +88,9 @@ def predict_frame(model, frame, n_classes=NUM_CLASSES):
     """
     w = frame_to_windows(frame, hop=WIN)
     x = torch.from_numpy(iq_to_input(w))
+    dvc = next(model.parameters()).device          # follow the model (cpu or cuda)
     with torch.no_grad():
-        p = F.softmax(model(x), dim=1).numpy()
+        p = F.softmax(model(x.to(dvc)), dim=1).cpu().numpy()
     votes = p.argmax(1)
     dev = np.bincount(votes, minlength=n_classes).argmax()
     return dev, p

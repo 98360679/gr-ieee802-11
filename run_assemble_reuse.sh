@@ -6,7 +6,7 @@ set -euo pipefail
 OTA=/media/nghoselab/T9/Data/session13/ota_dev6
 HERE=/home/nghoselab/Experiments/experiment_3
 SRC="$OTA/eot_t4"                       # existing ch0 + index to reuse
-PERTDIR="$1"; OUTSUB="$2"
+PERTDIR="$1"; OUTSUB="$2"; BASE_PSR="${3:--20}"   # PSR the delta was crafted at
 mkdir -p "$OTA/$OUTSUB"
 cp "$SRC/adv_frame.bin" "$OTA/$OUTSUB/adv_frame.bin"   # ch0 identical
 
@@ -18,6 +18,6 @@ python3 "$HERE/exp3_assemble_pert.py" \
 python3 "$HERE/exp3_psr_sweep.py" \
   --frame "$OTA/$OUTSUB/adv_frame.bin" \
   --pert  "$OTA/$OUTSUB/adv_perturbation.bin" \
-  --base-psr -20 --gap-ms 50 \
+  --base-psr "$BASE_PSR" --gap-ms 50 \
   --out   "$OTA/$OUTSUB/dac_safe_gapped"
 echo "DONE -> $OTA/$OUTSUB/dac_safe_gapped  (ch0 adv_frame.bin, ch1 adv_perturbation_psr_*.bin)"

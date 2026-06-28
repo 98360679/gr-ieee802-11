@@ -11,6 +11,7 @@ perturbation files build_adv_replay consumes via --pert-dir.
 import os
 import argparse
 import numpy as np
+import torch
 
 from exp3_make_perturbation import load_fp_model, predict_frame
 from exp3_make_perturbation_eot import craft_eot, hit_under
@@ -51,6 +52,8 @@ def main():
     print(f"{len(ids)} TX frame_ids to cover (range {min(ids)}..{max(ids)})")
 
     model, nc, n2i, i2n = load_fp_model(a.model)
+    DEV = 'cuda' if torch.cuda.is_available() else 'cpu'
+    model.to(DEV)
     true, tgt = n2i[f'device_{a.device}'], n2i[f'device_{a.target}']
     target_label = None if a.untargeted else tgt
     mi = 1 if (a.untargeted or a.runner_up) else 0   # [1]=off-true, [0]=target-hit
@@ -78,7 +81,7 @@ def main():
             mp = prob.mean(0).copy(); mp[true] = -1.0; tl = int(mp.argmax())
         else:
             tl = target_label
-        d = craft_eot(model, fr, true, tl, a.psr, 'cpu',
+        d = craft_eot(model, fr, true, tl, a.psr, DEV,
                       a.steps, n_eot=a.n_eot, shift=a.shift, phase_deg=a.phase)
         bare = d[PRE_ROLL:PRE_ROLL + ACTIVE].astype(C64)   # data-region delta for build_adv_replay
         bare.tofile(os.path.join(a.out, f"{fid}.bin"))     # named by frame_id
