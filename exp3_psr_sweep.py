@@ -31,7 +31,8 @@ FRAME_PERIOD = 15661    # build_adv_replay burst_len (one frame, packed)
 
 
 def _tag(psr):
-    return f"m{abs(int(psr))}" if psr < 0 else "0"
+    p = int(round(psr))
+    return f"m{abs(p)}" if p < 0 else (f"p{p}" if p > 0 else "0")
 
 
 def insert_gaps(x, frame_period, gap):

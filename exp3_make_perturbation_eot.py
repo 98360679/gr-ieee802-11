@@ -43,10 +43,12 @@ def frac_shift(x, tau):
 
 
 def craft_eot(model, frame, true_label, target_label, psr_db, dev,
-              steps=150, step_frac=0.06, n_eot=8, shift=1.5, phase_deg=180.0):
-    """EOT-PGD. target_label=k -> TARGETED (descend CE toward k); target_label=None
-    -> UNTARGETED (ascend CE on true_label, push off the true class). Returns delta
-    over the FULL frame (complex)."""
+              steps=150, step_frac=0.06, n_eot=8, shift=1.5, phase_deg=180.0,
+              method='pgd'):
+    """EOT attack. method='pgd' -> iterative EOT-PGD; method='fgsm' -> single-step
+    EOT-FGSM (one sign-gradient step filled to the per-window PSR budget). target_label=k
+    -> TARGETED (descend CE toward k); target_label=None -> UNTARGETED (ascend CE on
+    true_label). Returns delta over the FULL frame (complex)."""
     sig = torch.from_numpy(frame.astype(np.complex64)).to(dev)
     act = sig[PRE_ROLL:PRE_ROLL + ACTIVE]                  # [ACTIVE] complex
     sig_w = act.reshape(NW, WIN)
@@ -68,7 +70,8 @@ def craft_eot(model, frame, true_label, target_label, psr_db, dev,
         dw *= scale.view(-1, 1, 1)
         return dw.reshape(ACTIVE, 2)
 
-    for _ in range(steps):
+    def eot_grad():
+        """EOT-averaged gradient of CE(y) wrt d over random (shift, phase) draws."""
         if d.grad is not None:
             d.grad.zero_()
         dc = torch.complex(d[:, 0], d[:, 1])               # [ACTIVE]
@@ -78,15 +81,24 @@ def craft_eot(model, frame, true_label, target_label, psr_db, dev,
             phi = float(torch.empty(1).uniform_(-ph_max, ph_max))
             dct = frac_shift(dc, tau) * np.exp(1j * phi)
             comb = (act + dct).reshape(NW, WIN)            # [NW,WIN] complex
-            logits = model(torch_iq_to_input(comb))
-            loss = loss + F.cross_entropy(logits, y)
+            loss = loss + F.cross_entropy(model(torch_iq_to_input(comb)), y)
         (loss / n_eot).backward()
+        return d.grad.reshape(NW, WIN, 2)                  # [NW,WIN,2]
+
+    if method == 'fgsm':                                   # single sign-step to the budget
+        gw = eot_grad()
         with torch.no_grad():
-            gw = d.grad.reshape(NW, WIN, 2)                 # [NW,WIN,2]
-            gnorm = gw.flatten(1).norm(dim=1).clamp_min(_EPS)   # [NW]
-            step = (step_frac * budget / gnorm).view(NW, 1, 1) * gw   # [NW,WIN,2]
-            d += sign * step.reshape(ACTIVE, 2)            # untargeted ascend / targeted descend
-            d.copy_(project(d))
+            direction = sign * torch.sign(gw)              # FGSM (untgt ascend / tgt descend)
+            dn = direction.flatten(1).norm(dim=1).clamp_min(_EPS)   # [NW]
+            d.copy_((direction * (budget / dn).view(NW, 1, 1)).reshape(ACTIVE, 2))
+    else:                                                  # iterative PGD
+        for _ in range(steps):
+            gw = eot_grad()
+            with torch.no_grad():
+                gnorm = gw.flatten(1).norm(dim=1).clamp_min(_EPS)   # [NW]
+                step = (step_frac * budget / gnorm).view(NW, 1, 1) * gw
+                d += sign * step.reshape(ACTIVE, 2)        # untargeted ascend / targeted descend
+                d.copy_(project(d))
 
     delta_full = np.zeros(FRAME_LEN, dtype=np.complex64)
     dd = d.detach().cpu().numpy()

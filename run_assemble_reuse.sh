@@ -19,5 +19,6 @@ python3 "$HERE/exp3_psr_sweep.py" \
   --frame "$OTA/$OUTSUB/adv_frame.bin" \
   --pert  "$OTA/$OUTSUB/adv_perturbation.bin" \
   --base-psr "$BASE_PSR" --gap-ms 50 \
+  --psr -40 -35 -30 -25 -20 -15 -10 -5 0 5 10 \
   --out   "$OTA/$OUTSUB/dac_safe_gapped"
 echo "DONE -> $OTA/$OUTSUB/dac_safe_gapped  (ch0 adv_frame.bin, ch1 adv_perturbation_psr_*.bin)"

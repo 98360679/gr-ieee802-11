@@ -32,6 +32,8 @@ def main():
                    help='pure untargeted PGD (ascend CE on true) — alignment-fragile')
     p.add_argument('--runner-up', action='store_true',
                    help='robust untargeted: per frame, target the model nearest wrong class')
+    p.add_argument('--method', choices=['pgd', 'fgsm'], default='pgd',
+                   help='attack: iterative EOT-PGD (default) or single-step EOT-FGSM')
     p.add_argument('--psr', type=float, default=-20.0)
     p.add_argument('--steps', type=int, default=150)
     p.add_argument('--n-eot', type=int, default=12)
@@ -82,7 +84,8 @@ def main():
         else:
             tl = target_label
         d = craft_eot(model, fr, true, tl, a.psr, DEV,
-                      a.steps, n_eot=a.n_eot, shift=a.shift, phase_deg=a.phase)
+                      a.steps, n_eot=a.n_eot, shift=a.shift, phase_deg=a.phase,
+                      method=a.method)
         bare = d[PRE_ROLL:PRE_ROLL + ACTIVE].astype(C64)   # data-region delta for build_adv_replay
         bare.tofile(os.path.join(a.out, f"{fid}.bin"))     # named by frame_id
         h0 = hit_under(model, fr, d, true, tgt, nc)[mi]
