@@ -1,0 +1,96 @@
+{
+  "model": "fingerprint_cnn_ft20260628.pt",
+  "sweep": [
+    {
+      "psr": 0,
+      "frames": 1442,
+      "fooling": 0.0,
+      "dist": {
+        "device_1": 0,
+        "device_2": 0,
+        "device_3": 0,
+        "device_4": 0,
+        "device_5": 0,
+        "device_6": 1442
+      }
+    },
+    {
+      "psr": -5,
+      "frames": 1633,
+      "fooling": 0.0,
+      "dist": {
+        "device_1": 0,
+        "device_2": 0,
+        "device_3": 0,
+        "device_4": 0,
+        "device_5": 0,
+        "device_6": 1633
+      }
+    },
+    {
+      "psr": -10,
+      "frames": 1628,
+      "fooling": 0.0,
+      "dist": {
+        "device_1": 0,
+        "device_2": 0,
+        "device_3": 0,
+        "device_4": 0,
+        "device_5": 0,
+        "device_6": 1628
+      }
+    },
+    {
+      "psr": -15,
+      "frames": 1650,
+      "fooling": 0.00303030303030305,
+      "dist": {
+        "device_1": 0,
+        "device_2": 0,
+        "device_3": 0,
+        "device_4": 5,
+        "device_5": 0,
+        "device_6": 1645
+      }
+    },
+    {
+      "psr": -20,
+      "frames": 1639,
+      "fooling": 0.0036607687614399476,
+      "dist": {
+        "device_1": 0,
+        "device_2": 0,
+        "device_3": 0,
+        "device_4": 6,
+        "device_5": 0,
+        "device_6": 1633
+      }
+    },
+    {
+      "psr": -25,
+      "frames": 1598,
+      "fooling": 0.0,
+      "dist": {
+        "device_1": 0,
+        "device_2": 0,
+        "device_3": 0,
+        "device_4": 0,
+        "device_5": 0,
+        "device_6": 1598
+      }
+    },
+    {
+      "psr": -30,
+      "frames": 1639,
+      "fooling": 0.0,
+      "dist": {
+        "device_1": 0,
+        "device_2": 0,
+        "device_3": 0,
+        "device_4": 0,
+        "device_5": 0,
+        "device_6": 1639
+      }
+    }
+  ]
+}
