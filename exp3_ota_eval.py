@@ -14,13 +14,25 @@ Finding (session13): TARGETED transfers OTA (~73% @-15 on the crisp 6-28 model);
 untargeted and runner-up do NOT (phase-fragile / target doesn't transfer). See
 [[exp3-closed-loop-pipeline]].
 """
-import os, json, argparse, numpy as np
+import os, re, glob, json, argparse, numpy as np
 from exp3_rebaseline import eval_file
 from exp3_make_perturbation import load_fp_model
 
-PSR_FILES = [("adv_psr_0.bin", 0), ("adv_psr_5.bin", -5), ("adv_psr_10.bin", -10),
-             ("adv_psr_15.bin", -15), ("adv_psr_20.bin", -20), ("adv_psr_25.bin", -25),
-             ("adv_psr_30.bin", -30)]
+
+def _psr_from_name(fn):
+    """adv_psr_m40 -> -40, adv_psr_p10 -> +10, adv_psr_0 -> 0, adv_psr_15 -> -15
+    (bare number = negative, old convention)."""
+    t = re.search(r'adv_psr_(m|p)?(\d+)', os.path.basename(fn))
+    if not t:
+        return None
+    sign, n = t.group(1), int(t.group(2))
+    return n if sign == 'p' else (-n if (sign == 'm' or n) else 0)
+
+
+def discover(d):
+    """all adv_psr_*.bin in DIR, sorted by PSR ascending."""
+    out = [(os.path.basename(p), _psr_from_name(p)) for p in glob.glob(os.path.join(d, "adv_psr_*.bin"))]
+    return sorted([(f, p) for f, p in out if p is not None], key=lambda x: x[1])
 
 
 def main():
@@ -55,10 +67,8 @@ def main():
     hdr = f"{'PSR':>5} {'frames':>7} {'fooling':>8}" + (f" {'->dev'+str(a.target):>8}" if tgt is not None else "")
     print("\n" + hdr + "  distribution")
     rows = []
-    for fn, psr in PSR_FILES:
+    for fn, psr in discover(a.dir):
         p = os.path.join(a.dir, fn)
-        if not os.path.exists(p):
-            print(f"{psr:>5}  MISSING"); continue
         n, foo, hit, dist = summ(eval_file(m, nc, p, floor_pct=a.floor_pct, thr_mult=a.thr_mult)[1])
         dd = {k: v for k, v in sorted(dist.items(), key=lambda x: -x[1]) if v}
         line = f"{psr:>5} {n:>7} {foo:>8.3f}" + (f" {hit:>8.3f}" if hit is not None else "")
