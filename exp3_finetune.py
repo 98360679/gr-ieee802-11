@@ -19,6 +19,7 @@ Run:
   python3 exp3_finetune.py            # defaults: root=train/6_27_2026, 20 epochs
 """
 import os
+import re
 import json
 import argparse
 import numpy as np
@@ -37,12 +38,11 @@ SCRATCH = ("/tmp/claude-1001/-home-nghoselab/"
 DEF_ROOT = "/media/nghoselab/T9/Data/session13/train/6_27_2026"
 
 
-def find_capture(root, d):
-    bins = sorted(glob.glob(os.path.join(root, f"device_{d}", "*.bin")))
-    return bins[0] if bins else None
+def find_runs(root, d):
+    return sorted(glob.glob(os.path.join(root, f"device_{d}", "*.bin")))
 
 
-def build_dataset(root, hop_train, val_frac, cache, rebuild):
+def build_dataset(root, hop_train, val_frac, cache, rebuild, val_run=3):
     if os.path.exists(cache) and not rebuild:
         z = np.load(cache)
         print(f"  (loaded windowed cache {cache})")
@@ -51,26 +51,33 @@ def build_dataset(root, hop_train, val_frac, cache, rebuild):
     Xtr, ytr, Xva, yva, vfid = [], [], [], [], []
     fid = 0
     counts = {}
+    k = max(2, int(round(1.0 / val_frac)))
     for d in range(1, NUM_CLASSES + 1):
-        cap = find_capture(root, d)
-        if cap is None:
+        runs = find_runs(root, d)
+        if not runs:
             print(f"  device_{d}: no .bin, skipping")
             continue
-        frames = extract_frames_for_file(cap)[0]      # median floor (clean cap)
-        counts[DEVICE_NAMES[d - 1]] = int(len(frames))
         lbl = d - 1                                   # device_d -> class d-1
-        # frame-level split: every k-th frame -> val
-        k = max(2, int(round(1.0 / val_frac)))
-        for i, f in enumerate(frames):
-            is_val = (i % k == 0)
-            w = frame_to_windows(f, hop=WIN if is_val else hop_train)
-            x = iq_to_input(w)                        # [n,2,1024] unit-RMS f32
-            if is_val:
-                Xva.append(x); yva.append(np.full(len(x), lbl))
-                vfid.append(np.full(len(x), fid)); fid += 1
-            else:
-                Xtr.append(x); ytr.append(np.full(len(x), lbl))
-        print(f"  device_{d}: {len(frames)} frames  ({os.path.basename(cap)})")
+        multi = len(runs) > 1                         # leakage-safe run holdout if >1 run
+        nfr = 0
+        for cap in runs:
+            rm = re.search(r'run_?(\d+)', os.path.basename(cap))
+            run_no = int(rm.group(1)) if rm else 1
+            frames = extract_frames_for_file(cap)[0]  # median floor (clean cap)
+            nfr += len(frames)
+            for i, f in enumerate(frames):
+                # multi-run: hold out val_run; single-run: every k-th frame
+                is_val = (run_no == val_run) if multi else (i % k == 0)
+                w = frame_to_windows(f, hop=WIN if is_val else hop_train)
+                x = iq_to_input(w)                    # [n,2,1024] unit-RMS f32
+                if is_val:
+                    Xva.append(x); yva.append(np.full(len(x), lbl))
+                    vfid.append(np.full(len(x), fid)); fid += 1
+                else:
+                    Xtr.append(x); ytr.append(np.full(len(x), lbl))
+        counts[DEVICE_NAMES[d - 1]] = int(nfr)
+        split = f"run{val_run} held out" if multi else f"every 1/{k} frames"
+        print(f"  device_{d}: {nfr} frames over {len(runs)} run(s)  (val: {split})")
     tr = (np.concatenate(Xtr), np.concatenate(ytr).astype(np.int64))
     va = (np.concatenate(Xva), np.concatenate(yva).astype(np.int64),
           np.concatenate(vfid).astype(np.int64))
@@ -122,6 +129,8 @@ def main():
     p.add_argument('--snr-hi', type=float, default=40.0)
     p.add_argument('--wd', type=float, default=1e-4)
     p.add_argument('--tag', default='ft20260627')
+    p.add_argument('--val-run', type=int, default=3,
+                   help='held-out run number for val when >1 run/device (leakage-safe)')
     p.add_argument('--rebuild', action='store_true', help='rebuild window cache')
     a = p.parse_args()
 
@@ -131,10 +140,10 @@ def main():
     print(f"device {dev}   init {os.path.basename(a.init)}   "
           f"aug {not a.no_aug}   lr {a.lr}   epochs {a.epochs}")
 
-    cache = os.path.join(SCRATCH, "ft_windows_6_27.npz")
+    cache = os.path.join(SCRATCH, f"ftwin_{os.path.basename(a.root.rstrip('/'))}.npz")
     print("Loading + windowing today's captures ...")
     (Xtr, ytr), (Xva, yva, vfid), counts = build_dataset(
-        a.root, a.hop_train, a.val_frac, cache, a.rebuild)
+        a.root, a.hop_train, a.val_frac, cache, a.rebuild, a.val_run)
     print(f"  frames/device: {counts}")
     print(f"  train windows {Xtr.shape}   val windows {Xva.shape}")
 
