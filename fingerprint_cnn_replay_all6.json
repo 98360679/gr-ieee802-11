@@ -1,0 +1,33 @@
+{
+  "arch": "FingerprintCNN",
+  "num_classes": 6,
+  "fs": 5000000,
+  "win": 1024,
+  "preprocessing": "per-window unit-RMS, input [2,1024] I/Q",
+  "finetuned_from": "fingerprint_cnn_retrained.pt",
+  "finetune_root": "/media/nghoselab/T9/Data/session13/train/6_29_2026/enrollment",
+  "val_window_acc": 0.5145734534022486,
+  "val_frame_acc": 0.5195822454308094,
+  "val_note": "single-run frame split; optimistic",
+  "stale_val_frame_acc": 0.1122715404699739,
+  "epochs": 20,
+  "lr": 0.0002,
+  "aug": true,
+  "params": 123430,
+  "class_labels": {
+    "device_1": 0,
+    "device_2": 1,
+    "device_3": 2,
+    "device_4": 3,
+    "device_5": 4,
+    "device_6": 5
+  },
+  "frames_per_device": {
+    "device_1": 1711,
+    "device_2": 1568,
+    "device_3": 1013,
+    "device_4": 1473,
+    "device_5": 1121,
+    "device_6": 1747
+  }
+}
