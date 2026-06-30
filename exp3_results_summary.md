@@ -11,7 +11,7 @@ Last updated 2026-06-30.
 |---|---|---|---|---|
 | **Targeted PGD → device_4** (fuzzy model, 6/27) | ~100 / ~100 / ~90 | **100% all PSR (0…−30)** → device_4, link-stealthy | ✗ | Works, but unvalidated + weak model |
 | **Targeted PGD → device_4** (crisp model, 6/28) | ~100 / 100 / 90 | **38–73%** (73% @−15) | ✗ | Works, inconsistent (channel) |
-| **Targeted PGD → device_4** (clean all-replay, new) | 94 / 94 / 93 | *pending* | will have | The confound-free run |
+| **Targeted PGD → device_4** (clean all-replay, 6/29 model) | 94 / 94 / 93 | **0% all PSR (−40…+10)**, 2-ch AND single-ch | ✓ (digital δ-off → device_1) | **Fails** — δ upstream of PA fingerprint |
 | **Untargeted PGD** (pure) | 69–98 / 96 / **24–33** | **~0%** (all PSR) | ✓ (=device_6) | Fails OTA — phase-fragile |
 | **Untargeted FGSM** | 0 / 0 / 0 @−15 | ~0% / artifact | partial | Too weak (single step) |
 | **Runner-up** (robust untargeted) | 96–100 / ~100 / 70–88 | ~0% (clean) | ✓ | Fails — target shifts OTA |
@@ -28,24 +28,34 @@ coherent direction that survives alignment error + channel; untargeted's is not.
 | Original retrained (6/26) | 0.934 | Drifts to 0.16–0.33 next day |
 | Fine-tunes (6/27 / 6/28 / 6/29, single-run) | 0.78 / 1.00 / 0.97 | Optimistic (no held-out run) |
 | 6/29, 3-run, **mixed** enrollment | **0.935** | Confounded — device_6 only replay class |
-| 6/29, 3-run, **all-replay** (small CNN) | **0.52** | Honest, content + path controlled |
-| 6/29, all-replay, **BigCNN (5×, 80 ep)** | **0.59** | **Capacity ruled out** → real limit |
+| 6/29, 3-run, all-replay, **single frozen frame** (small CNN) | **0.52** | Content-STARVED — one PA operating point |
+| 6/29, all-replay, single frame, **BigCNN (5×, 80 ep)** | **0.59** | Not capacity — it's content starvation |
+| **6/30, 3-run, all-replay, VARIED content** (222 frames), run-3 holdout | **0.986** | Operational (= attack content), leakage-safe by run |
+| **6/30, VARIED content, CONTENT-DISJOINT** (train 0–147 / test 148–221) | **0.948** | **Honest — generalizes to UNSEEN content = hardware** |
 
-**Takeaway:** the 0.93–0.99 was **inflated by content/path cues**. True
-hardware-fingerprint separability ≈ **0.6**.
+**Takeaway (CORRECTED):** the 0.52/0.59 was **content starvation** from the single
+frozen enroll frame (one PA operating point), NOT a hardware limit. With **varied
+content** (what the pipeline actually replays), honest content-disjoint separability is
+**0.95** — device_3/4/5/6 perfect (1.000) on unseen frames, only device_1↔2 (same
+USRP model/batch) confuse. The fingerprinter is **strong and hardware-based**; the
+digital-δ attack failing 0% against it is therefore a meaningful negative result.
 
 ---
 
-## Table C — Per-device fingerprint (clean all-replay, BigCNN)
+## Table C — Per-device fingerprint, VARIED content (6/30, content-disjoint = honest)
 
-| Device | Held-out acc | Separability |
-|---|---|---|
-| device_4 | 0.99 | well-fingerprinted |
-| device_6 (**attack target**) | **0.91** | well-fingerprinted |
-| device_3 | 0.80 | ok |
-| device_5 | 0.67 | weak |
-| device_1 | 0.22 | **~indistinguishable** (same model as 2) |
-| device_2 | 0.19 | **~indistinguishable** |
+| Device | single-frame (6/29) | varied shared-content | **varied content-disjoint (honest)** |
+|---|---|---|---|
+| device_4 | 0.99 | 1.000 | **1.000** |
+| device_6 (**attack target**) | 0.91 | 1.000 | **1.000** |
+| device_5 | 0.67 | 1.000 | **1.000** |
+| device_3 | 0.80 | 0.994 | **1.000** |
+| device_1 | 0.22 | 0.963 | **0.843** (→ device_2) |
+| device_2 | 0.19 | 0.958 | **0.829** (→ device_1) |
+
+The single-frame column (left) was content starvation. With varied content the radios
+separate cleanly; only device_1↔2 (same USRP model/batch) remain partly confusable, and
+even they reach ~0.84 on unseen frames. **device_6 (target) is perfectly fingerprinted.**
 
 ---
 
@@ -80,4 +90,4 @@ frames split cleanly device_4 (target) / device_6 (still correct) — no scatter
 ## Caveats that qualify everything above
 1. The **6/27 (100%) and 6/28 (73%) targeted runs lack δ-off controls** → "promising but unverified". That targeted landed on device_4 (not the device_5 replay-artifact class) is suggestive it's real, but unconfirmed.
 2. The **device_5 "artifact"** was a train-path ≠ test-path issue (model enrolled on live message-strobe, tested on file-replay), fixed by enrolling on the replay path; δ-off then reads device_6 100%.
-3. Content-controlled fingerprinting ≈ **0.6**; the **device_6 target is still well-fingerprinted (0.91)**, so attacking it is meaningful. The new confound-free **targeted device_4 bundle (94% robust)** is built, awaiting the clean all-replay enrollment transmit.
+3. **CORRECTED:** honest (content-disjoint, varied) fingerprinting ≈ **0.95**, not 0.6 — the 0.6 was single-frame content starvation. **device_6 (target) is perfectly fingerprinted (1.000)** on unseen content. The confound-free **targeted device_4 attack was evaluated 6/30 against the all-replay model: 0% fooling at every PSR (−40…+10), both 2-channel and single-channel pre-combined.** Diagnosis: the *transmitted digital* combined file (δ included, even +10 dB) reads device_1 — it has no hardware fingerprint until device_6's radio imprints one OTA, after which it reads device_6. The digital δ lives **upstream** of the PA impairment the classifier reads, so it cannot move a hardware-keyed model. The earlier 6/27 (100%) / 6/28 (73%) "wins" were against strobe-enrolled models keying on content/path (a confound a digital δ *can* move).
