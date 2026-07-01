@@ -23,9 +23,11 @@ import string
 from gnuradio import gr
 
 
-class blk(gr.sync_block):
+class blk(gr.basic_block):
+    """Emit a fresh random WiFi payload on each strobe trigger (content-rich enrollment)."""
+
     def __init__(self, pdu_length=1500, seed=0):
-        gr.sync_block.__init__(self, name='exp3_varied_payload', in_sig=None, out_sig=None)
+        gr.basic_block.__init__(self, name='exp3_varied_payload', in_sig=[], out_sig=[])
         self.pdu_length = int(pdu_length)
         self.rng = random.Random(int(seed))
         self.alphabet = string.ascii_letters + string.digits   # printable => safe pmt symbol
