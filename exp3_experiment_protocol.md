@@ -127,9 +127,11 @@ one δ crafted per frame at −10 dB (robust point), fixed RX gain, δ-off contr
 - [ ] ≥1 unenrolled adversary replays device_6 (general survival).
 - [ ] Explain the device_5 leakage (0.23) in the device_6→device_1 double-hop.
 
-**Files ready to generate on request:** `dev6_recording_dacsafe.bin`, `delta_alone_dacsafe.bin`.
+**Transmit files ready (on drive, `session13/double_hop/`):** `dev6_recording_dacsafe.bin`
+(Exp 3-B, peak 0.95), `delta_alone_dacsafe.bin` (Exp 3-A, real preamble + δ-only payload,
+221 frames extractable, peak 0.95).
 **Analysis tools:** `exp3_ota_eval.py` (fooling), `exp3_ber_compare.py` (BER),
-`exp3_impairment_fit.py` (whose fingerprint); δ-survival matched-filter tool = TODO.
+`exp3_impairment_fit.py` (whose fingerprint), `exp3_delta_survival.py` (Exp 2 M1/M2 δ-survival).
 
 ## Narrative arc (for the write-up)
 
