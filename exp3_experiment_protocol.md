@@ -7,9 +7,16 @@
 
 A single adversarial perturbation δ is injected at **three points along the signal chain**,
 relative to the hardware that *creates* the RF fingerprint (the PA/RF front-end). The fooling
-rate collapses as δ moves **upstream** of that hardware, and the last transmitter's fingerprint
-governs the outcome. This isolates *why* content-domain adversarial attacks (Kim et al.,
+rate collapses as δ moves **upstream** of that hardware. *Whose* fingerprint governs a recapture
+is itself an experimental question — **do not assume "the last transmitter wins"**: a CLEAN
+input takes the transmitting PA's fingerprint, but a PRE-fingerprinted input may **survive**
+(the device_6→device_1 double-hop read device_6 0.76, not device_1). So the mechanism is
+**measured, not assumed.** This isolates *why* content-domain adversarial attacks (Kim et al.,
 arXiv:2005.05321) do **not** transfer to hardware-domain RF-fingerprint classifiers.
+
+> **All three experiments are (re)run from scratch under this protocol** — the earlier tests
+> were not structured this way and, critically, never isolated *whether* device_6's PA erases
+> the δ or merely outweighs it. That distinction is now a designed measurement (Exp 2 below).
 
 **Independent variable:** injection point of δ (receiver input → legit TX → adversary TX).
 **Controlled:** same δ, same model, same content (222 replay frames), fixed gain.
@@ -46,10 +53,27 @@ arXiv:2005.05321) do **not** transfer to hardware-domain RF-fingerprint classifi
 
 - **Threat model:** closed-loop replay; device_6 transmits frame+δ; RX recaptures OTA.
 - **Method:** bake δ into the transmit file (2-channel: ch0 frame / ch1 δ; single-channel:
-  precombined). PSR sweep −30…+10 + δ-off. Recapture, classify, decode.
-- **Success criterion (falsification):** if fooling ≈ 0 at all PSR while Exp 1 succeeded on the
-  *same* δ → δ is inert upstream of the PA. **Result: 0% fooling, 2-ch and single-ch, all PSR.**
-- **Status:** DONE (δ-off control present). NEED BER tabulated from `ber_frames_*.jsonl`.
+  precombined). Recapture, classify, decode. δ-off control every run.
+- **Key question this experiment must ANSWER (not assume):** when fooling = 0, is it because
+  device_6's PA **erased** the δ, or because the δ **survived but is outweighed** by device_6's
+  imprint? These are different mechanisms; the earlier tests conflated them.
+
+  **Mandatory mechanism measurements (paired captures, back-to-back, static channel, same gain):**
+  - **R_off** = frame only; **R_on** = frame + δ (strong PSR, e.g. −5/0).
+  - **M1 δ-survival (matched filter):** correlate R_on against the *known transmitted δ*; peak
+    (absent in R_off) ⇒ δ physically survived the PA. No peak ⇒ δ erased/attenuated.
+  - **M2 residual:** align, compute `R_on − R_off`; compare energy to the transmitted δ
+    (channel-scaled); classify the residual — does it wear **device_6's** fingerprint?
+  - **M3 high-PSR sweep:** fooling vs PSR up to **+20/+30**. Flat 0 even when δ dominates in
+    power ⇒ device_6's imprint governs regardless of δ magnitude.
+- **Interpretation:**
+  - δ **survives** AND fooling = 0 (M1 peak, M3 flat) ⇒ **fingerprint barrier proven** — δ is
+    present but outweighed; the transmitter's imprint dominates the decision.
+  - δ does **not** survive (no M1 peak) ⇒ 0% was δ fragility, NOT the barrier — must
+    strengthen/align δ before concluding anything.
+- **Prior (unstructured) result:** 0% fooling, 2-ch and single-ch, all PSR −30…+10 — but WITHOUT
+  M1/M2, so the *reason* is unproven. Re-run from scratch with the measurements above.
+- **BER:** clean = δ-off replay through the same path; report δ-on vs δ-off per PSR.
 
 ## Experiment 3 — δ through an independent adversary (adversary-fingerprint term)
 
@@ -76,12 +100,36 @@ Two variants × two adversary types. Define success per variant.
 
 ---
 
-## Captures still needed
+## From-scratch capture checklist
 
-- Exp 3-A: δ-only transmit (`delta_alone_dacsafe.bin`) → recapture.
-- Exp 3-B: `dev6_recording_dacsafe.bin` through device_2 (radio-independence); device_1 replays
-  device_3 and device_1 (controls 1–2); ≥1 unenrolled adversary.
-- BER: ensure each recapture logs `ber_frames_*.jsonl` against known TX bits.
+Fixed across everything: model `fingerprint_cnn_ft20260630varied.pt`, 222 replay frames,
+one δ crafted per frame at −10 dB (robust point), fixed RX gain, δ-off control every run,
+`ber_frames_*.jsonl` logged vs known TX bits.
+
+**Exp 1 (no new capture — computational):**
+- [ ] Targeted (→device_4) + untargeted δ on *received* frames; fooling + BER vs ε/PSR. (Have partial.)
+
+**Exp 2 (legit TX = device_6, fresh):**
+- [ ] R_off = frame only, recapture.
+- [ ] R_on = frame+δ at PSR ∈ {−5, 0} (strong), recapture back-to-back with R_off (static channel).
+- [ ] High-PSR sweep: frame+δ at PSR {+5, +10, +20, +30}, recapture each.
+- [ ] Full sweep −30…+10 for the headline 0% curve (single-channel + 2-channel).
+- [ ] Analysis: M1 matched-filter δ-survival, M2 residual `R_on−R_off`, M3 fooling-vs-PSR.
+
+**Exp 3-A (δ-alone superposition):**
+- [ ] `delta_alone_dacsafe.bin` transmitted by an adversary radio → recapture (predict: reads adversary).
+- [ ] MIMO: device_6 frame ⊕ adversary δ across PSR → recapture (predict: device_6→adversary crossover).
+
+**Exp 3-B (full replay / impersonation):**
+- [ ] `dev6_recording_dacsafe.bin` via device_2 (radio-independence — still device_6?).
+- [ ] Control 1: device_1 replays device_3's recording (generalization — reads device_3?).
+- [ ] Control 2: device_1 replays its own recording (sanity — reads device_1?).
+- [ ] ≥1 unenrolled adversary replays device_6 (general survival).
+- [ ] Explain the device_5 leakage (0.23) in the device_6→device_1 double-hop.
+
+**Files ready to generate on request:** `dev6_recording_dacsafe.bin`, `delta_alone_dacsafe.bin`.
+**Analysis tools:** `exp3_ota_eval.py` (fooling), `exp3_ber_compare.py` (BER),
+`exp3_impairment_fit.py` (whose fingerprint); δ-survival matched-filter tool = TODO.
 
 ## Narrative arc (for the write-up)
 
