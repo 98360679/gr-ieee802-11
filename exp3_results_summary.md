@@ -91,3 +91,80 @@ frames split cleanly device_4 (target) / device_6 (still correct) — no scatter
 1. The **6/27 (100%) and 6/28 (73%) targeted runs lack δ-off controls** → "promising but unverified". That targeted landed on device_4 (not the device_5 replay-artifact class) is suggestive it's real, but unconfirmed.
 2. The **device_5 "artifact"** was a train-path ≠ test-path issue (model enrolled on live message-strobe, tested on file-replay), fixed by enrolling on the replay path; δ-off then reads device_6 100%.
 3. **CORRECTED:** honest (content-disjoint, varied) fingerprinting ≈ **0.95**, not 0.6 — the 0.6 was single-frame content starvation. **device_6 (target) is perfectly fingerprinted (1.000)** on unseen content. The confound-free **targeted device_4 attack was evaluated 6/30 against the all-replay model: 0% fooling at every PSR (−40…+10), both 2-channel and single-channel pre-combined.** Diagnosis: the *transmitted digital* combined file (δ included, even +10 dB) reads device_1 — it has no hardware fingerprint until device_6's radio imprints one OTA, after which it reads device_6. The digital δ lives **upstream** of the PA impairment the classifier reads, so it cannot move a hardware-keyed model. The earlier 6/27 (100%) / 6/28 (73%) "wins" were against strobe-enrolled models keying on content/path (a confound a digital δ *can* move).
+
+---
+
+## Mechanism — why a digital δ cannot fool a hardware fingerprinter
+
+The **upstream / downstream barrier.** The adversary edits the **digital** signal (upstream);
+the fingerprint is stamped by the **PA at transmit time** (downstream). The δ and the feature
+it targets are in different domains, separated by hardware the adversary doesn't own. Three
+controlled results on the varied model (`fingerprint_cnn_ft20260630varied.pt`, 6/30):
+
+**(i) δ is provably inert on the transmit signal.** Clean digital payload reads device_1 (OOD,
+no fingerprint); payload **+ δ** (even +0 dB, hot) **still** reads device_1. Same answer with
+or without δ. Yet the *same* δ on a **recapture** frame (that carries device_6's hardware) flips
+device_6→device_4 at **100%** (incl. 90° / 1-sample robust). The δ is a 100% weapon on a
+hardware-bearing frame and literally inert on the transmit file — because the feature it attacks
+doesn't exist until the PA creates it.
+
+**(ii) Test 1 — the fingerprint is NOT localized (can't be reused).** Per-window fingerprint
+accuracy (all devices send identical content ⇒ pure hardware): window 0 (preamble) **0.911**,
+windows 1–13 (payload) mean **0.933**. The fingerprint is spread across the **whole frame**
+(payload ≥ preamble) — hardware impairments modulate every OFDM symbol. ⇒ you cannot localize
+the identity to a saved preamble and reuse it; changing the payload changes 93% of the evidence.
+
+**(iii) Test 2 (proxy) — the last transmitter owns the fingerprint.** The *same* `enroll_varied.bin`
+file transmitted by different radios: via device_1 → reads **device_1 (0.973)**, via device_6 →
+reads **device_6 (1.000)**. Byte-identical content; the fingerprint follows the **transmitter**,
+not the signal. ⇒ a captured fingerprint does not survive re-transmission — the adversary's own
+PA overwrites it. (This is *why* RF fingerprinting is an anti-replay defense.) *Definitive physical
+double-hop pending — see below.*
+
+**Corollary (the user's observation):** the δ, transmitted by the **adversary's** radio, carries
+the **adversary's** fingerprint — not device_4's — a second independent reason impersonation fails.
+
+### Reconciliation with Kim et al. (arXiv:2005.05321)
+
+Kim's channel-aware adversarial attacks target **content-domain** classifiers (modulation / signal-type
+recognition), where the discriminative feature **is the digital signal structure** — the *same domain
+the δ lives in*. There the δ reaches the feature and the attack works; Kim is correct for that task.
+**RF fingerprinting is a hardware-domain classifier:** its feature is a physical impairment created by
+the PA **downstream** of the δ. Applying a content-domain attack to a hardware-domain feature is a
+**category error** — the perturbation never touches the fingerprint. *Quantifying exactly that is the
+contribution:* channel-aware adversarial perturbations transfer to signal/modulation classifiers but
+**not** to RF-fingerprint classifiers, with controlled OTA evidence.
+
+---
+
+## Hardware-mimicry — the only attack with a physical path to the fingerprint
+
+Since the fingerprint is *created by transmit hardware*, the only viable attack makes the **adversary's
+transmit chain synthesize the target's impairment signature** (not perturb content). Concrete plan:
+
+1. **Characterize device_4's impairments** from enrollment captures: carrier frequency offset (CFO),
+   I/Q gain & phase imbalance, PA AM/AM + AM/PM curve, phase-noise PSD, DC offset. (Tool:
+   `exp3_impairment_fit.py` — TODO.)
+2. **Pre-distort** the adversary's transmitted samples to impose those impairments (compose the inverse
+   of the adversary chain with a forward device_4 model), or tune the radio front-end (gain/bias/DAC
+   backoff) to approximate them.
+3. **Validate physically:** transmit the pre-distorted signal through the adversary radio, recapture,
+   fingerprint → target device_4.
+4. **Threat-model honesty:** this is hardware impersonation, white-box on device_4's *signal-level*
+   impairments (needs enrollment-grade access to device_4's emissions); no claim of cloning the silicon.
+   Expected ceiling set by how faithfully a *different* PA can reproduce another's nonlinearity.
+
+This is the honest positive-result direction: a physical path to the feature the digital δ never had.
+
+---
+
+## Pending — physical double-hop confirmation (test 2, definitive)
+
+Capture (one transmit, one recapture, no new tooling):
+> Replay device_6's enrollment recapture `train/6_30_2026/enrollment/device_6/adv_run_1.bin`
+> (already carries device_6's real OTA fingerprint) **through the adversary radio** (e.g. device_1),
+> recapture → `double_hop_dev6_via_dev1.bin`.
+
+Eval: `python3 exp3_ota_eval.py`-style read with `fingerprint_cnn_ft20260630varied.pt`. Reads
+**device_6** = fingerprint survived (impersonation viable); reads **device_1** = adversary's PA won
+(replay defeated, as predicted). Ready to run on delivery.
