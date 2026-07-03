@@ -46,7 +46,9 @@ def bits(msdu):
 
 
 def ber(clean_bits, pert_msdus):
-    """BER = sum bit-errors / sum bits, each perturbed frame best-matched to a clean frame."""
+    """BER = sum bit-errors / sum bits, each perturbed frame best-matched to a clean frame.
+    With 0 observed errors, report the rule-of-3 95%-confidence UPPER BOUND 2.996/N (you
+    cannot claim BER=0 from a finite sample; -ln(0.05)=2.996)."""
     tot_err = tot_bits = 0
     for pm in pert_msdus:
         pb = bits(pm); bestd, bestL = 10 ** 12, 0
@@ -55,7 +57,9 @@ def ber(clean_bits, pert_msdus):
             if d < bestd:
                 bestd, bestL = d, L
         tot_err += bestd; tot_bits += bestL
-    return tot_err / tot_bits if tot_bits else float('nan')
+    if not tot_bits:
+        return float('nan')
+    return (tot_err if tot_err > 0 else 2.996) / tot_bits
 
 
 def main():
