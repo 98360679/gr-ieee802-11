@@ -108,6 +108,30 @@ errors → the attack is **link-stealthy**: the payload FEC corrects the perturb
 frame decodes garbled ≈ 40% wrong ≈ 1.6 k errors / 56 k bits), not a systematic BER — the
 neighboring ε all sit at the floor. Re-running with more frames would average these out.
 
+## Table D — BER vs PSR (the FEC waterfall)
+
+Wider sweep (ε = 10^(PSR/20)), 30 frames. Shows BER *is* monotonic in the budget once δ
+crosses the code's correction threshold. floor = rule-of-3 2.67×10⁻⁵; **nan = link fully
+broken (no frame decodes) = the extreme of BER**.
+
+| PSR (dB) | ε | PGD→d4 | PGD off | FGSM→d4 | FGSM off |
+|---:|---:|---:|---:|---:|---:|
+| −30 | 0.03 | floor | floor | floor | floor |
+| −25 | 0.06 | floor | floor | floor | floor |
+| −20 | 0.10 | floor | floor | floor | floor |
+| −15 | 0.18 | floor | floor | floor | floor |
+| −10 | 0.32 | 1.6e-3 | floor | 2.9e-4 | 1.4e-3 |
+| −5 | 0.56 | 1.3e-2 | 1.1e-2 | 2.9e-2 | 2.0e-2 |
+| 0 | 1.00 | 3.5e-2 | nan | nan | 9.2e-2 |
+| +5 | 1.78 | 5.2e-2 | nan | nan | 1.8e-1 |
+| +10 | 3.16 | nan | nan | nan | 2.9e-1 |
+| +15 | 5.62 | nan | nan | nan | nan |
+
+**Post-FEC BER is flat-then-waterfall:** ≈0 (FEC corrects, link-stealthy) through PSR ≤ −15,
+then rises monotonically −10→+10, then `nan` (total link failure) at high PSR. Tables B/C's
+ε 0.05–0.26 (= PSR −26…−12) sit entirely on the stealthy flat shelf — which is why the
+attack fools the fingerprint there with no measurable link damage.
+
 ## Bottom line (Exp 1)
 The digital attack is a **clean success and link-stealthy**: **PGD targeted device_6→device_4
 = 100% from ε≈0.07 / PSR≈−20 dB with BER at the noise floor** (FEC corrects it). PGD ≫ FGSM
