@@ -45,11 +45,12 @@ def bits(msdu):
     return np.unpackbits(np.frombuffer(msdu, np.uint8))
 
 
-def ber(clean_bits, pert_msdus):
-    """BER = sum bit-errors / sum bits, each perturbed frame best-matched to a clean frame.
-    With 0 observed errors, report the rule-of-3 95%-confidence UPPER BOUND 2.996/N (you
-    cannot claim BER=0 from a finite sample; -ln(0.05)=2.996)."""
-    tot_err = tot_bits = 0
+def ber_fer(clean_bits, pert_msdus):
+    """Return (BER, FER). BER = bit-errors/bits (each perturbed frame best-matched to a clean
+    frame); 0 observed errors -> rule-of-3 upper bound 2.996/N; no decode at all -> 0.5 (total
+    link failure, random). FER = fraction of the cleanly-decodable frames that δ breaks (fail
+    to decode OR decode with >=1 bit error = CRC fail)."""
+    tot_err = tot_bits = n_correct = 0
     for pm in pert_msdus:
         pb = bits(pm); bestd, bestL = 10 ** 12, 0
         for cb in clean_bits:
@@ -57,9 +58,11 @@ def ber(clean_bits, pert_msdus):
             if d < bestd:
                 bestd, bestL = d, L
         tot_err += bestd; tot_bits += bestL
-    if not tot_bits:
-        return 0.5          # no frame decodes -> total link failure = worst-case BER (random guess)
-    return (tot_err if tot_err > 0 else 2.996) / tot_bits
+        if bestd == 0:
+            n_correct += 1
+    ber = 0.5 if not tot_bits else (tot_err if tot_err > 0 else 2.996) / tot_bits
+    fer = 1.0 - n_correct / max(1, len(clean_bits))
+    return ber, min(1.0, max(0.0, fer))
 
 
 def main():
@@ -82,18 +85,24 @@ def main():
     print(f"{a.model}  BER (link stealth), device_{a.device}->device_{a.target}\n"
           f"  {len(frames)} frames, {len(clean_msdus)} clean-decoded reference MSDUs\n")
 
-    print(f"{'eps':>5} | {'PGD→d'+str(a.target):>9} {'PGD off':>8} | {'FGSM→d'+str(a.target):>10} {'FGSM off':>9}")
+    tag = 'PGD→d%d PGDoff FGSM→d%d FGSMoff' % (a.target, a.target)
+    rows = []
     for eps in a.epsilons:
-        row = {}
+        r = {}
         for method in ('pgd', 'fgsm'):
             for mode, target in (('t', tgt), ('u', None)):
-                pert = []
-                for fn in frames:
-                    d = craft(m, fn, true, target, eps, method, a.steps, a.step_frac, dev)
-                    pert.append(fn + d.cpu().numpy())
-                row[(method, mode)] = ber(clean_bits, decode_capture(pert))
-        print(f"{eps:>5.2f} | {row[('pgd','t')]:>9.2e} {row[('pgd','u')]:>8.2e} | "
-              f"{row[('fgsm','t')]:>10.2e} {row[('fgsm','u')]:>9.2e}")
+                pert = [fn + craft(m, fn, true, target, eps, method, a.steps, a.step_frac, dev).cpu().numpy()
+                        for fn in frames]
+                r[(method, mode)] = ber_fer(clean_bits, decode_capture(pert))
+        rows.append((eps, r))
+        print(f"[eps {eps:.3f} done]")
+    order = [('pgd', 't'), ('pgd', 'u'), ('fgsm', 't'), ('fgsm', 'u')]
+    print(f"\n=== BER ===\n{'eps':>6} | {tag}")
+    for eps, r in rows:
+        print(f"{eps:>6.3f} | " + " ".join(f"{r[k][0]:>8.2e}" for k in order))
+    print(f"\n=== FER ===\n{'eps':>6} | {tag}")
+    for eps, r in rows:
+        print(f"{eps:>6.3f} | " + " ".join(f"{r[k][1]:>8.3f}" for k in order))
 
 
 if __name__ == '__main__':
