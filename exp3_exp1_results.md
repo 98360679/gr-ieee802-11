@@ -122,22 +122,43 @@ crosses the code's correction threshold. Two endpoint conventions make every cel
 | −25 | 0.06 | 2.67e-05 | 2.67e-05 | 2.67e-05 | 2.67e-05 |
 | −20 | 0.10 | 2.67e-05 | 2.67e-05 | 2.67e-05 | 2.67e-05 |
 | −15 | 0.18 | 2.67e-05 | 2.67e-05 | 2.67e-05 | 2.67e-05 |
-| −10 | 0.32 | 1.64e-03 | 2.67e-05 | 2.95e-04 | 1.40e-03 |
-| −5 | 0.56 | 1.27e-02 | 1.12e-02 | 2.93e-02 | 2.04e-02 |
-| 0 | 1.00 | 3.52e-02 | **0.50** | **0.50** | 9.18e-02 |
-| +5 | 1.78 | 5.23e-02 | **0.50** | **0.50** | 1.76e-01 |
-| +10 | 3.16 | **0.50** | **0.50** | **0.50** | 2.87e-01 |
-| +15 | 5.62 | **0.50** | **0.50** | **0.50** | **0.50** |
+| −10 | 0.32 | 1.60e-02 | 2.67e-05 | 2.95e-04 | 1.40e-03 |
+| −5 | 0.56 | 2.60e-02 | 1.50e-02 | 2.93e-02 | 2.04e-02 |
+| 0 | 1.00 | 1.99e-01 | 0.50 | 0.50 | 9.18e-02 |
+| +5 | 1.78 | 0.50 | 0.50 | 0.50 | 1.76e-01 |
+| +10 | 3.16 | 0.50 | 0.50 | 0.50 | 2.87e-01 |
+| +15 | 5.62 | 0.50 | 0.50 | 0.50 | 0.50 |
 
 **Post-FEC BER is flat-then-waterfall, monotonic non-decreasing:** floor (FEC corrects,
-link-stealthy) through PSR ≤ −15, rising −10→+10, saturating at **0.50** (total link failure)
-at high PSR. Tables B/C's ε 0.05–0.26 (= PSR −26…−12) sit entirely on the stealthy flat shelf
-— which is why the attack fools the fingerprint there with no measurable link damage.
+link-stealthy) through PSR ≤ −15, rising −10→0, saturating at **0.50** (total link failure)
+at high PSR. Tables B/C's ε 0.05–0.26 (= PSR −26…−12) sit entirely on the stealthy flat shelf.
 
-*Caveat:* the numeric cells are BER over frames that still **decode**; as PSR rises, fewer
-frames decode (rising FER) before the 0.50 total-failure point — so link damage is even worse
-than the mid-range numbers alone suggest. A companion FER/decode-rate column would make that
-explicit.
+## Table E — FER (frame-error / packet-loss) vs PSR
+
+Fraction of the cleanly-decodable frames that δ breaks (fail to decode OR decode with ≥1 bit
+error = CRC fail). 30 frames.
+
+| PSR (dB) | ε | PGD→d4 | PGD off | FGSM→d4 | FGSM off |
+|---:|---:|---:|---:|---:|---:|
+| −30 | 0.03 | 0.00 | 0.00 | 0.00 | 0.00 |
+| −25 | 0.06 | 0.00 | 0.00 | 0.00 | 0.00 |
+| −20 | 0.10 | 0.00 | 0.00 | 0.00 | 0.00 |
+| −15 | 0.18 | 0.00 | 0.00 | 0.00 | 0.00 |
+| −10 | 0.32 | 0.21 | 0.00 | 0.25 | 0.18 |
+| −5 | 0.56 | 0.96 | 1.00 | 1.00 | 0.93 |
+| 0 | 1.00 | 1.00 | 1.00 | 1.00 | 1.00 |
+| +5 | 1.78 | 1.00 | 1.00 | 1.00 | 1.00 |
+| +10 | 3.16 | 1.00 | 1.00 | 1.00 | 1.00 |
+| +15 | 5.62 | 1.00 | 1.00 | 1.00 | 1.00 |
+
+**FER is the sharper stealth boundary:** **0 through PSR ≤ −15** (zero packet loss — the whole
+ε 0.05–0.26 stealthy shelf) → **~1.0 by PSR −5**, collapsing *faster* than BER saturates
+(a frame fails CRC on even a few bad bits, so FER hits 1 while BER is still mid-climb).
+
+*Measurement note:* PSR −30→0 measured directly; the near-garbage input at PSR ≥ +5 crashes
+the gr-ieee80211 decoder (C-level), so those BER cells are from a prior partial run and FER is
+set to 1.0 (link already fully collapsed by −5). The ε 0.05–0.26 stealth conclusion is
+unaffected (all directly measured, FER = 0).
 
 ## Bottom line (Exp 1)
 The digital attack is a **clean success and link-stealthy**: **PGD targeted device_6→device_4
