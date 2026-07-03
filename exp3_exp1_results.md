@@ -111,26 +111,33 @@ neighboring ε all sit at the floor. Re-running with more frames would average t
 ## Table D — BER vs PSR (the FEC waterfall)
 
 Wider sweep (ε = 10^(PSR/20)), 30 frames. Shows BER *is* monotonic in the budget once δ
-crosses the code's correction threshold. floor = rule-of-3 2.67×10⁻⁵; **nan = link fully
-broken (no frame decodes) = the extreme of BER**.
+crosses the code's correction threshold. Two endpoint conventions make every cell a number:
+- **floor = 2.67×10⁻⁵** — the rule-of-3 lower limit (zero errors observed; link-stealthy).
+- **0.50** — total link failure (no frame decodes → no information → random bits → 50% BER,
+  the maximum meaningful BER).
 
 | PSR (dB) | ε | PGD→d4 | PGD off | FGSM→d4 | FGSM off |
 |---:|---:|---:|---:|---:|---:|
-| −30 | 0.03 | floor | floor | floor | floor |
-| −25 | 0.06 | floor | floor | floor | floor |
-| −20 | 0.10 | floor | floor | floor | floor |
-| −15 | 0.18 | floor | floor | floor | floor |
-| −10 | 0.32 | 1.6e-3 | floor | 2.9e-4 | 1.4e-3 |
-| −5 | 0.56 | 1.3e-2 | 1.1e-2 | 2.9e-2 | 2.0e-2 |
-| 0 | 1.00 | 3.5e-2 | nan | nan | 9.2e-2 |
-| +5 | 1.78 | 5.2e-2 | nan | nan | 1.8e-1 |
-| +10 | 3.16 | nan | nan | nan | 2.9e-1 |
-| +15 | 5.62 | nan | nan | nan | nan |
+| −30 | 0.03 | 2.67e-05 | 2.67e-05 | 2.67e-05 | 2.67e-05 |
+| −25 | 0.06 | 2.67e-05 | 2.67e-05 | 2.67e-05 | 2.67e-05 |
+| −20 | 0.10 | 2.67e-05 | 2.67e-05 | 2.67e-05 | 2.67e-05 |
+| −15 | 0.18 | 2.67e-05 | 2.67e-05 | 2.67e-05 | 2.67e-05 |
+| −10 | 0.32 | 1.64e-03 | 2.67e-05 | 2.95e-04 | 1.40e-03 |
+| −5 | 0.56 | 1.27e-02 | 1.12e-02 | 2.93e-02 | 2.04e-02 |
+| 0 | 1.00 | 3.52e-02 | **0.50** | **0.50** | 9.18e-02 |
+| +5 | 1.78 | 5.23e-02 | **0.50** | **0.50** | 1.76e-01 |
+| +10 | 3.16 | **0.50** | **0.50** | **0.50** | 2.87e-01 |
+| +15 | 5.62 | **0.50** | **0.50** | **0.50** | **0.50** |
 
-**Post-FEC BER is flat-then-waterfall:** ≈0 (FEC corrects, link-stealthy) through PSR ≤ −15,
-then rises monotonically −10→+10, then `nan` (total link failure) at high PSR. Tables B/C's
-ε 0.05–0.26 (= PSR −26…−12) sit entirely on the stealthy flat shelf — which is why the
-attack fools the fingerprint there with no measurable link damage.
+**Post-FEC BER is flat-then-waterfall, monotonic non-decreasing:** floor (FEC corrects,
+link-stealthy) through PSR ≤ −15, rising −10→+10, saturating at **0.50** (total link failure)
+at high PSR. Tables B/C's ε 0.05–0.26 (= PSR −26…−12) sit entirely on the stealthy flat shelf
+— which is why the attack fools the fingerprint there with no measurable link damage.
+
+*Caveat:* the numeric cells are BER over frames that still **decode**; as PSR rises, fewer
+frames decode (rising FER) before the 0.50 total-failure point — so link damage is even worse
+than the mid-range numbers alone suggest. A companion FER/decode-rate column would make that
+explicit.
 
 ## Bottom line (Exp 1)
 The digital attack is a **clean success and link-stealthy**: **PGD targeted device_6→device_4

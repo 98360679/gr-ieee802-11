@@ -58,7 +58,7 @@ def ber(clean_bits, pert_msdus):
                 bestd, bestL = d, L
         tot_err += bestd; tot_bits += bestL
     if not tot_bits:
-        return float('nan')
+        return 0.5          # no frame decodes -> total link failure = worst-case BER (random guess)
     return (tot_err if tot_err > 0 else 2.996) / tot_bits
 
 
