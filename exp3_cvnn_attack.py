@@ -43,11 +43,12 @@ def predict(model, frame_t):
     return int(torch.bincount(lg.argmax(1), minlength=NUM_CLASSES).argmax())
 
 
-def craft(model, frame_np, true, target, psr_db, method, steps, step_frac, dev):
-    """Return δ (complex, active-region only). target=None => untargeted."""
+def craft(model, frame_np, true, target, budget_frac, method, steps, step_frac, dev):
+    """Return δ (complex, active-region only). target=None => untargeted.
+    budget_frac = ||δ||_2 / ||active||_2  (= ε for the epsilon sweep, = 10^(PSR/20) for PSR)."""
     frame = torch.tensor(frame_np, dtype=torch.complex64, device=dev)
     a0, a1 = PRE_ROLL, PRE_ROLL + ACTIVE
-    budget = (float((frame[a0:a1].abs() ** 2).sum()) * 10 ** (psr_db / 10)) ** 0.5
+    budget = budget_frac * float((frame[a0:a1].abs() ** 2).sum()) ** 0.5
     mask = torch.zeros(frame.shape, device=dev); mask[a0:a1] = 1.0
     delta = torch.zeros(frame.shape, dtype=torch.complex64, device=dev, requires_grad=True)
     untargeted = target is None
@@ -82,6 +83,8 @@ def main():
     ap.add_argument('--step-frac', type=float, default=0.1)
     ap.add_argument('--psrs', type=float, nargs='+',
                     default=[-30, -25, -20, -15, -10, -5, 0, 5, 10, 15])
+    ap.add_argument('--epsilons', type=float, nargs='+', default=None,
+                    help='sweep epsilon (amplitude ratio) instead of PSR')
     a = ap.parse_args()
     dev = 'cuda' if torch.cuda.is_available() else 'cpu'
     m = load_cvnn(a.model, dev)
@@ -92,19 +95,23 @@ def main():
     print(f"{a.model}  legit device_{a.device} -> target device_{a.target}\n"
           f"  {len(frames)} clean device_{a.device} frames (of {len(allf)})\n")
 
-    print(f"{'PSR':>5} | {'PGD→d'+str(a.target):>9} {'PGD off':>8} | {'FGSM→d'+str(a.target):>10} {'FGSM off':>9}")
-    for psr in a.psrs:
+    if a.epsilons is not None:                                     # ε sweep: budget_frac = ε
+        sweep = [(f"{e:.2f}", e) for e in a.epsilons]; hdr = 'eps'
+    else:                                                         # PSR sweep: budget_frac = 10^(PSR/20)
+        sweep = [(f"{p:.0f}", 10 ** (p / 20)) for p in a.psrs]; hdr = 'PSR'
+    print(f"{hdr:>5} | {'PGD→d'+str(a.target):>9} {'PGD off':>8} | {'FGSM→d'+str(a.target):>10} {'FGSM off':>9}")
+    for label, frac in sweep:
         row = {}
         for method in ('pgd', 'fgsm'):
             for mode, target in (('t', tgt), ('u', None)):
                 hits = 0
                 for f in frames:
                     fn = np.asarray(f, C64)
-                    d = craft(m, fn, true, target, psr, method, a.steps, a.step_frac, dev)
+                    d = craft(m, fn, true, target, frac, method, a.steps, a.step_frac, dev)
                     pred = predict(m, torch.tensor(fn, device=dev) + d)
                     hits += (pred == tgt) if mode == 't' else (pred != true)
                 row[(method, mode)] = hits / max(1, len(frames))
-        print(f"{psr:>5.0f} | {row[('pgd','t')]:>9.2f} {row[('pgd','u')]:>8.2f} | "
+        print(f"{label:>5} | {row[('pgd','t')]:>9.2f} {row[('pgd','u')]:>8.2f} | "
               f"{row[('fgsm','t')]:>10.2f} {row[('fgsm','u')]:>9.2f}")
 
 
