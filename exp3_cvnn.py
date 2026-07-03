@@ -185,6 +185,7 @@ def main():
     ap.add_argument('--hop-train', type=int, default=384)
     ap.add_argument('--thr-mult', type=float, default=2.0)
     ap.add_argument('--tag', default='cvnn20260702')
+    ap.add_argument('--init', default=None, help='CVNN checkpoint to FINE-TUNE from (else train from scratch)')
     ap.add_argument('--no-aug', action='store_true', help='disable drift augmentation')
     ap.add_argument('--cfo-correct', action='store_true', help='CFO-sync each window before the model (frequency-invariant)')
     ap.add_argument('--cfo-max', type=float, default=3000.0)
@@ -203,6 +204,9 @@ def main():
     dl = DataLoader(TensorDataset(torch.from_numpy(Xtr), torch.from_numpy(ytr)),
                     batch_size=256, shuffle=True)
     m = CVNN(NUM_CLASSES).to(dev)
+    if a.init:
+        m.load_state_dict(torch.load(a.init, map_location=dev))
+        print(f"  FINE-TUNING from {a.init}  (lr {a.lr})")
     print(f"  CVNN params: {n_params(m):,}")
     opt = torch.optim.AdamW(m.parameters(), lr=a.lr, weight_decay=1e-4)
     sched = torch.optim.lr_scheduler.CosineAnnealingLR(opt, a.epochs)
