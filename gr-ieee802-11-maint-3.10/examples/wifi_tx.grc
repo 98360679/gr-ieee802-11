@@ -788,8 +788,154 @@ blocks:
     rotation: 0
     state: enabled
 
+- name: frame_recorder_0
+  id: epy_block
+  parameters:
+    _source_code: "import numpy as np\nfrom gnuradio import gr\nimport pmt\n\nclass\
+      \ blk(gr.sync_block):\n    \"\"\"frame_recorder: sink that writes every input\
+      \ sample to frame_file (the exact\n    baseband stream sent to the USRP) and\
+      \ writes a per-frame index to index_file with\n    columns: frame_id,burst_offset,burst_len,data_offset,data_len\
+      \ (sample units).\n\n    It counts 'packet_len' tagged-stream bursts at packet_pad2's\
+      \ output; burst order ==\n    stamped over-the-air frame_id (1 strobe -> 1 PDU\
+      \ -> 1 burst). The packet_len tag\n    value is the PADDED burst length (bursts\
+      \ are contiguous, back-to-back in the file).\n    The inner non-zero frame is\
+      \ [data_offset, data_offset+data_len), i.e. the burst with\n    the pad_front\
+      \ leading zeros and pad_tail trailing zeros removed -- align perturbation\n\
+      \    to that inner span in step 5.\"\"\"\n    def __init__(self, frame_file='/dev/shm/frame.bin',\
+      \ index_file='/dev/shm/frame_index.csv', pad_front=100, pad_tail=1000):\n  \
+      \      gr.sync_block.__init__(self, name='frame_recorder', in_sig=[np.complex64],\
+      \ out_sig=None)\n        self.frame_file = frame_file\n        self.index_file\
+      \ = index_file\n        self.pad_front = int(pad_front)\n        self.pad_tail\
+      \ = int(pad_tail)\n        self.frame_id = 0\n        self._f = None\n     \
+      \   self._idx = None\n        self._len_tag = pmt.intern('packet_len')\n\n \
+      \   def start(self):\n        self._f = open(self.frame_file, 'wb')\n      \
+      \  self._idx = open(self.index_file, 'w')\n        self._idx.write('frame_id,burst_offset,burst_len,data_offset,data_len\\\
+      n'); self._idx.flush()\n        return True\n\n    def stop(self):\n       \
+      \ if self._f: self._f.close()\n        if self._idx: self._idx.close()\n   \
+      \     return True\n\n    def work(self, input_items, output_items):\n      \
+      \  in0 = input_items[0]\n        n = len(in0)\n        in0.tofile(self._f)\n\
+      \        tags = self.get_tags_in_window(0, 0, n, self._len_tag)\n        for\
+      \ t in tags:\n            off = int(t.offset)\n            try:\n          \
+      \      blen = int(pmt.to_long(t.value))\n            except Exception:\n   \
+      \             blen = int(pmt.to_python(t.value))\n            data_off = off\
+      \ + self.pad_front\n            data_len = blen - self.pad_front - self.pad_tail\n\
+      \            self._idx.write(f'{self.frame_id},{off},{blen},{data_off},{data_len}\\\
+      n')\n            self.frame_id += 1\n        self._idx.flush()\n        return\
+      \ n\n"
+    affinity: ''
+    alias: ''
+    comment: ''
+    frame_file: '''/media/cse-nghose-25/T9/Data/session14/enrollment/device_%d/frame_run_%d.bin''%(device_id,
+      run_id)'
+    index_file: '''/media/cse-nghose-25/T9/Data/session14/enrollment/device_%d/frame_index_run_%d.csv''%(device_id,run_id)'
+    maxoutbuf: '0'
+    minoutbuf: '0'
+    pad_front: '100'
+    pad_tail: '1000'
+  states:
+    _io_cache: '(''frame_recorder'', ''blk'', [(''frame_file'', "''/dev/shm/frame.bin''"),
+      (''index_file'', "''/dev/shm/frame_index.csv''"), (''pad_front'', ''100''),
+      (''pad_tail'', ''1000'')], [(''0'', ''complex'', 1)], [], "frame_recorder: sink
+      that writes every input sample to frame_file (the exact\n    baseband stream
+      sent to the USRP) and writes a per-frame index to index_file with\n    columns:
+      frame_id,burst_offset,burst_len,data_offset,data_len (sample units).\n\n    It
+      counts ''packet_len'' tagged-stream bursts at packet_pad2''s output; burst order
+      ==\n    stamped over-the-air frame_id (1 strobe -> 1 PDU -> 1 burst). The packet_len
+      tag\n    value is the PADDED burst length (bursts are contiguous, back-to-back
+      in the file).\n    The inner non-zero frame is [data_offset, data_offset+data_len),
+      i.e. the burst with\n    the pad_front leading zeros and pad_tail trailing zeros
+      removed -- align perturbation\n    to that inner span in step 5.", [''frame_file'',
+      ''index_file'', ''pad_front'', ''pad_tail''])'
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [416, 576.0]
+    rotation: 180
+    state: enabled
+- name: epy_block_0
+  id: epy_block
+  parameters:
+    _source_code: "\"\"\"exp3 varied payload + recoverable OTA frame ID (content-rich\
+      \ enrollment).\n\nOn each strobe trigger emit one PDU on 'out' with payload\
+      \ =\n    b'FRID' + uint32_BE(frame_id) + per-frame random [A-Za-z0-9] filler\n\
+      totalling pdu_length bytes. The filler is derived deterministically from\n(seed,\
+      \ frame_id), so the RX (ber_sink) can regenerate the exact expected\npayload\
+      \ from the decoded frame_id and measure a TRUE BER, while content still\nvaries\
+      \ every frame. Each emitted frame_id is appended to id_log.\n\"\"\"\nimport\
+      \ pmt\nimport random\nimport string\nimport struct\nfrom gnuradio import gr\n\
+      \nMAGIC = b'FRID'\nALPHABET = string.ascii_letters + string.digits   # fixed\
+      \ order; RX ber_sink MUST match\n\n\ndef frid_filler(seed, frame_id, n):\n \
+      \   \"\"\"Deterministic per-frame filler from (seed, frame_id); identical on\
+      \ RX.\"\"\"\n    rng = random.Random(((int(seed) & 0xFFFFFFFF) << 32) | (int(frame_id)\
+      \ & 0xFFFFFFFF))\n    return bytes(ord(rng.choice(ALPHABET)) for _ in range(n))\n\
+      \n\nclass blk(gr.basic_block):\n    \"\"\"Emit FRID+uint32(frame_id)+per-frame-seeded\
+      \ filler; log each id to id_log.\"\"\"\n\n    def __init__(self, pdu_length=1500,\
+      \ seed=0, id_log='/dev/shm/tx_ids.csv'):\n        gr.basic_block.__init__(self,\
+      \ name='exp3_varied_payload_id', in_sig=[], out_sig=[])\n        self.pdu_length\
+      \ = int(pdu_length)\n        self.seed = int(seed)\n        self.id_log = id_log\n\
+      \        self.fid = 0\n        self._log = None\n        self.message_port_register_in(pmt.intern('trig'))\n\
+      \        self.message_port_register_out(pmt.intern('out'))\n        self.set_msg_handler(pmt.intern('trig'),\
+      \ self.handle)\n        # Startup filler fingerprint: must match the RX ber_sink's\
+      \ line exactly.\n        # A mismatch means TX and RX disagree on seed/scheme\
+      \ -> BER will be bogus.\n        fp = frid_filler(self.seed, 0, 8).decode()\
+      \ + '|' + frid_filler(self.seed, 1, 8).decode()\n        print('[filler-fp]\
+      \ TX exp3_varied_payload_id seed=%d fp=%s' % (self.seed, fp), flush=True)\n\n\
+      \    def handle(self, _msg):\n        if self._log is None:\n            try:\n\
+      \                self._log = open(self.id_log, 'w')\n                self._log.write('frame_id\\\
+      n'); self._log.flush()\n            except Exception:\n                self._log\
+      \ = False\n        n = max(8, int(self.pdu_length))\n        header = MAGIC\
+      \ + struct.pack('>I', self.fid & 0xFFFFFFFF)\n        filler = frid_filler(self.seed,\
+      \ self.fid, n - 8)\n        payload = header + filler\n        vec = pmt.init_u8vector(len(payload),\
+      \ list(payload))\n        self.message_port_pub(pmt.intern('out'), pmt.cons(pmt.PMT_NIL,\
+      \ vec))\n        if self._log:\n            self._log.write(f'{self.fid}\\n');\
+      \ self._log.flush()\n        self.fid += 1\n"
+    affinity: ''
+    alias: ''
+    comment: ''
+    id_log: '''/media/cse-nghose-25/T9/Data/session14/enrollment/device_%d/tx_ids_run_%d.csv''%(device_id,run_id)'
+    maxoutbuf: '0'
+    minoutbuf: '0'
+    pdu_length: pdu_length
+    seed: '0'
+  states:
+    _io_cache: ('exp3_varied_payload_id', 'blk', [('pdu_length', '1500'), ('seed',
+      '0'), ('id_log', "'/dev/shm/tx_ids.csv'")], [('trig', 'message', 1)], [('out',
+      'message', 1)], 'Emit FRID+uint32(frame_id)+per-frame-seeded filler; log each
+      id to id_log.', ['id_log', 'pdu_length', 'seed'])
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [248, 160.0]
+    rotation: 0
+    state: enabled
+- name: device_id
+  id: variable
+  parameters:
+    comment: ''
+    value: '6'
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [1144, 160.0]
+    rotation: 0
+    state: enabled
+- name: run_id
+  id: variable
+  parameters:
+    comment: ''
+    value: '2'
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [1240, 160.0]
+    rotation: 0
+    state: enabled
 connections:
-- [blocks_message_strobe_0_0, strobe, ieee802_11_mac_0, app in]
+- [blocks_message_strobe_0_0, strobe, epy_block_0, trig]
+- [epy_block_0, out, ieee802_11_mac_0, app in]
+- [foo_packet_pad2_0, '0', frame_recorder_0, '0']
 - [blocks_multiply_const_vxx_0, '0', foo_packet_pad2_0, '0']
 - [blocks_vector_source_x_0, '0', wifi_phy_hier_0, '0']
 - [foo_packet_pad2_0, '0', uhd_usrp_sink_0, '0']
