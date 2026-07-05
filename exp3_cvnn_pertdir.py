@@ -27,7 +27,7 @@ def frac_shift(x, s):
     return torch.fft.ifft(torch.fft.fft(x) * torch.exp(-2j * math.pi * k * s))
 
 
-def craft_eot(model, frame_np, true, target, psr_db, dev, steps, n_eot, shift, phase_deg, step_frac):
+def craft_eot(model, frame_np, true, target, psr_db, dev, steps, n_eot, shift, phase_deg, step_frac, adv_eot=False):
     frame = torch.tensor(frame_np, dtype=torch.complex64, device=dev)
     budget = 10 ** (psr_db / 20) * float((frame[A0:A1].abs() ** 2).sum()) ** 0.5
     mask = torch.zeros(frame.shape, device=dev); mask[A0:A1] = 1.0
@@ -39,10 +39,22 @@ def craft_eot(model, frame_np, true, target, psr_db, dev, steps, n_eot, shift, p
             delta.grad = None
         g = torch.zeros_like(delta)
         for _ in range(n_eot):
-            s = (torch.rand(1).item() * 2 - 1) * shift
-            ph = (torch.rand(1).item() * 2 - 1) * math.radians(phase_deg)
-            f = frac_shift(frame + delta * mask, s) * (math.cos(ph) + 1j * math.sin(ph))
-            loss = F.cross_entropy(logits_of(model, f), y)
+            if adv_eot:                       # 2-ch: transform δ ALONE (adversary channel h_a), frame fixed
+                p = delta * mask
+                if shift:
+                    p = frac_shift(p, (torch.rand(1).item() * 2 - 1) * shift)
+                if phase_deg:
+                    ph = (torch.rand(1).item() * 2 - 1) * math.radians(phase_deg)
+                    p = p * (math.cos(ph) + 1j * math.sin(ph))
+                u = frame + p
+            else:                             # single-ch: one shared transform on the composite
+                u = frame + delta * mask
+                if shift:                                          # skip when --no-eot -> plain PGD
+                    u = frac_shift(u, (torch.rand(1).item() * 2 - 1) * shift)
+                if phase_deg:
+                    ph = (torch.rand(1).item() * 2 - 1) * math.radians(phase_deg)
+                    u = u * (math.cos(ph) + 1j * math.sin(ph))
+            loss = F.cross_entropy(logits_of(model, u), y)
             g = g + torch.autograd.grad(loss, delta)[0]
         with torch.no_grad():
             direction = (g if untargeted else -g)
@@ -63,6 +75,10 @@ def main():
     p.add_argument('--psr', type=float, default=-10.0)
     p.add_argument('--steps', type=int, default=100); p.add_argument('--n-eot', type=int, default=8)
     p.add_argument('--shift', type=float, default=1.5); p.add_argument('--phase', type=float, default=90.0)
+    p.add_argument('--no-eot', action='store_true',
+                   help='plain PGD, no EOT (n_eot=1, shift=0, phase=0)')
+    p.add_argument('--adv-eot', action='store_true',
+                   help='2-channel: transform δ ALONE (adversary channel h_a), frame fixed')
     p.add_argument('--step-frac', type=float, default=0.1)
     p.add_argument('--ids-csv', required=True); p.add_argument('--out', required=True)
     a = p.parse_args()
@@ -76,15 +92,20 @@ def main():
     allf = extract_frames_for_file(a.capture, floor_pct=20.0, thr_mult=2.0)[0]
     frames = [np.asarray(f, C64) for f in allf
               if predict(m, torch.tensor(np.asarray(f, C64), device=dev)) == true]
+    n_eot = 1 if a.no_eot else a.n_eot
+    shift = 0.0 if a.no_eot else a.shift
+    phase = 0.0 if a.no_eot else a.phase
     os.makedirs(a.out, exist_ok=True)
     mode = f"UNTARGETED off device_{a.device}" if a.untargeted else f"device_{a.device}->device_{a.target}"
-    print(f"{a.model}: {mode}  PSR {a.psr}  EOT shift±{a.shift}/phase±{a.phase}\n"
+    eot = ("no-EOT (plain PGD)" if a.no_eot else
+           f"{'ADV-channel ' if a.adv_eot else ''}EOT shift±{a.shift}/phase±{a.phase} x{a.n_eot}")
+    print(f"{a.model}: {mode}  PSR {a.psr}  {eot}\n"
           f"  {len(ids)} ids, {len(frames)} clean device_{a.device} frames -> {a.out}")
 
     hit = 0
     for j, fid in enumerate(ids):
         fn = frames[j % len(frames)]
-        d = craft_eot(m, fn, true, target, a.psr, dev, a.steps, a.n_eot, a.shift, a.phase, a.step_frac)
+        d = craft_eot(m, fn, true, target, a.psr, dev, a.steps, n_eot, shift, phase, a.step_frac, a.adv_eot)
         d[A0:A1].cpu().numpy().astype(C64).tofile(os.path.join(a.out, f"{fid}.bin"))
         pred = predict(m, torch.tensor(fn, device=dev) + d)
         hit += (pred != true) if a.untargeted else (pred == tgt)
