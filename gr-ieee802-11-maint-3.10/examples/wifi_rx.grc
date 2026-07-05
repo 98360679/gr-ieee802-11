@@ -27,7 +27,7 @@ options:
   states:
     bus_sink: false
     bus_source: false
-    bus_structure: null
+    bus_structure:
     coordinate: [8, 12.0]
     rotation: 0
     state: enabled
@@ -59,7 +59,7 @@ blocks:
   states:
     bus_sink: false
     bus_source: false
-    bus_structure: null
+    bus_structure:
     coordinate: [296, 12.0]
     rotation: 0
     state: enabled
@@ -71,7 +71,7 @@ blocks:
   states:
     bus_sink: false
     bus_source: false
-    bus_structure: null
+    bus_structure:
     coordinate: [1160, 24.0]
     rotation: 0
     state: enabled
@@ -83,7 +83,7 @@ blocks:
   states:
     bus_sink: false
     bus_source: false
-    bus_structure: null
+    bus_structure:
     coordinate: [1592, 48.0]
     rotation: 0
     state: enabled
@@ -98,46 +98,14 @@ blocks:
     label2: ''
     label3: ''
     label4: ''
-    labels: '[''  1 | 2412.0 | 11g'', ''  2 | 2417.0 | 11g'', ''  3 | 2422.0 | 11g'',
-      ''  4 | 2427.0 | 11g'', ''  5 | 2432.0 | 11g'', ''  6 | 2437.0 | 11g'', ''  7
-      | 2442.0 | 11g'', ''  8 | 2447.0 | 11g'', ''  9 | 2450.0 | 11g'', '' 10 | 2457.0
-      | 11g'', '' 11 | 2462.0 | 11g'', '' 12 | 2467.0 | 11g'', '' 13 | 2472.0 | 11g'',
-      '' 14 | 2484.0 | 11g'',  '' 33 | 3300.0 | 11g'', '' 34 | 5170.0 | 11a'', ''
-      36 | 5180.0 | 11a'', '' 38 | 5190.0 | 11a'', '' 40 | 5200.0 | 11a'', '' 42 |
-      5210.0 | 11a'', '' 44 | 5220.0 | 11a'', '' 46 | 5230.0 | 11a'', '' 48 | 5240.0
-      | 11a'', '' 50 | 5250.0 | 11a'', '' 52 | 5260.0 | 11a'', '' 54 | 5270.0 | 11a'',
-      '' 56 | 5280.0 | 11a'', '' 58 | 5290.0 | 11a'', '' 60 | 5300.0 | 11a'', '' 62
-      | 5310.0 | 11a'', '' 64 | 5320.0 | 11a'', ''100 | 5500.0 | 11a'', ''102 | 5510.0
-      | 11a'', ''104 | 5520.0 | 11a'', ''106 | 5530.0 | 11a'', ''108 | 5540.0 | 11a'',
-      ''110 | 5550.0 | 11a'', ''112 | 5560.0 | 11a'', ''114 | 5570.0 | 11a'', ''116
-      | 5580.0 | 11a'', ''118 | 5590.0 | 11a'', ''120 | 5600.0 | 11a'', ''122 | 5610.0
-      | 11a'', ''124 | 5620.0 | 11a'', ''126 | 5630.0 | 11a'', ''128 | 5640.0 | 11a'',
-      ''132 | 5660.0 | 11a'', ''134 | 5670.0 | 11a'', ''136 | 5680.0 | 11a'', ''138
-      | 5690.0 | 11a'', ''140 | 5700.0 | 11a'', ''142 | 5710.0 | 11a'', ''144 | 5720.0
-      | 11a'', ''149 | 5745.0 | 11a (SRD)'', ''151 | 5755.0 | 11a (SRD)'', ''153 |
-      5765.0 | 11a (SRD)'', ''155 | 5775.0 | 11a (SRD)'', ''157 | 5785.0 | 11a (SRD)'',
-      ''159 | 5795.0 | 11a (SRD)'', ''161 | 5805.0 | 11a (SRD)'', ''165 | 5825.0 |
-      11a (SRD)'', ''172 | 5860.0 | 11p'', ''174 | 5870.0 | 11p'', ''176 | 5880.0
-      | 11p'', ''178 | 5890.0 | 11p'', ''180 | 5900.0 | 11p'', ''182 | 5910.0 | 11p'',
-      ''184 | 5920.0 | 11p'']'
+    labels: '[''  1 | 2412.0 | 11g'', ''  2 | 2417.0 | 11g'', ''  3 | 2422.0 | 11g'', ''  4 | 2427.0 | 11g'', ''  5 | 2432.0 | 11g'', ''  6 | 2437.0 | 11g'', ''  7 | 2442.0 | 11g'', ''  8 | 2447.0 | 11g'', ''  9 | 2450.0 | 11g'', '' 10 | 2457.0 | 11g'', '' 11 | 2462.0 | 11g'', '' 12 | 2467.0 | 11g'', '' 13 | 2472.0 | 11g'', '' 14 | 2484.0 | 11g'',  '' 33 | 3300.0 | 11g'', '' 34 | 5170.0 | 11a'', '' 36 | 5180.0 | 11a'', '' 38 | 5190.0 | 11a'', '' 40 | 5200.0 | 11a'', '' 42 | 5210.0 | 11a'', '' 44 | 5220.0 | 11a'', '' 46 | 5230.0 | 11a'', '' 48 | 5240.0 | 11a'', '' 50 | 5250.0 | 11a'', '' 52 | 5260.0 | 11a'', '' 54 | 5270.0 | 11a'', '' 56 | 5280.0 | 11a'', '' 58 | 5290.0 | 11a'', '' 60 | 5300.0 | 11a'', '' 62 | 5310.0 | 11a'', '' 64 | 5320.0 | 11a'', ''100 | 5500.0 | 11a'', ''102 | 5510.0 | 11a'', ''104 | 5520.0 | 11a'', ''106 | 5530.0 | 11a'', ''108 | 5540.0 | 11a'', ''110 | 5550.0 | 11a'', ''112 | 5560.0 | 11a'', ''114 | 5570.0 | 11a'', ''116 | 5580.0 | 11a'', ''118 | 5590.0 | 11a'', ''120 | 5600.0 | 11a'', ''122 | 5610.0 | 11a'', ''124 | 5620.0 | 11a'', ''126 | 5630.0 | 11a'', ''128 | 5640.0 | 11a'', ''132 | 5660.0 | 11a'', ''134 | 5670.0 | 11a'', ''136 | 5680.0 | 11a'', ''138 | 5690.0 | 11a'', ''140 | 5700.0 | 11a'', ''142 | 5710.0 | 11a'', ''144 | 5720.0 | 11a'', ''149 | 5745.0 | 11a (SRD)'', ''151 | 5755.0 | 11a (SRD)'', ''153 | 5765.0 | 11a (SRD)'', ''155 | 5775.0 | 11a (SRD)'', ''157 | 5785.0 | 11a (SRD)'', ''159 | 5795.0 | 11a (SRD)'', ''161 | 5805.0 | 11a (SRD)'', ''165 | 5825.0 | 11a (SRD)'', ''172 | 5860.0 | 11p'', ''174 | 5870.0 | 11p'', ''176 | 5880.0 | 11p'', ''178 | 5890.0 | 11p'', ''180 | 5900.0 | 11p'', ''182 | 5910.0 | 11p'', ''184 | 5920.0 | 11p'']'
     num_opts: '0'
     option0: '0'
     option1: '1'
     option2: '2'
     option3: '3'
     option4: '4'
-    options: '[2412000000.0, 2417000000.0, 2422000000.0, 2427000000.0, 2432000000.0,
-      2437000000.0, 2442000000.0, 2447000000.0, 2450000000.0, 2457000000.0, 2462000000.0,
-      2467000000.0, 2472000000.0, 2484000000.0, 3300000000.0,5170000000.0, 5180000000.0,
-      5190000000.0, 5200000000.0, 5210000000.0, 5220000000.0, 5230000000.0, 5240000000.0,
-      5250000000.0, 5260000000.0, 5270000000.0, 5280000000.0, 5290000000.0, 5300000000.0,
-      5310000000.0, 5320000000.0, 5500000000.0, 5510000000.0, 5520000000.0, 5530000000.0,
-      5540000000.0, 5550000000.0, 5560000000.0, 5570000000.0, 5580000000.0, 5590000000.0,
-      5600000000.0, 5610000000.0, 5620000000.0, 5630000000.0, 5640000000.0, 5660000000.0,
-      5670000000.0, 5680000000.0, 5690000000.0, 5700000000.0, 5710000000.0, 5720000000.0,
-      5745000000.0, 5755000000.0, 5765000000.0, 5775000000.0, 5785000000.0, 5795000000.0,
-      5805000000.0, 5825000000.0, 5860000000.0, 5870000000.0, 5880000000.0, 5890000000.0,
-      5900000000.0, 5910000000.0, 5920000000.0]'
+    options: '[2412000000.0, 2417000000.0, 2422000000.0, 2427000000.0, 2432000000.0, 2437000000.0, 2442000000.0, 2447000000.0, 2450000000.0, 2457000000.0, 2462000000.0, 2467000000.0, 2472000000.0, 2484000000.0, 3300000000.0,5170000000.0, 5180000000.0, 5190000000.0, 5200000000.0, 5210000000.0, 5220000000.0, 5230000000.0, 5240000000.0, 5250000000.0, 5260000000.0, 5270000000.0, 5280000000.0, 5290000000.0, 5300000000.0, 5310000000.0, 5320000000.0, 5500000000.0, 5510000000.0, 5520000000.0, 5530000000.0, 5540000000.0, 5550000000.0, 5560000000.0, 5570000000.0, 5580000000.0, 5590000000.0, 5600000000.0, 5610000000.0, 5620000000.0, 5630000000.0, 5640000000.0, 5660000000.0, 5670000000.0, 5680000000.0, 5690000000.0, 5700000000.0, 5710000000.0, 5720000000.0, 5745000000.0, 5755000000.0, 5765000000.0, 5775000000.0, 5785000000.0, 5795000000.0, 5805000000.0, 5825000000.0, 5860000000.0, 5870000000.0, 5880000000.0, 5890000000.0, 5900000000.0, 5910000000.0, 5920000000.0]'
     orient: Qt.QVBoxLayout
     type: real
     value: '2450000000.0'
@@ -145,7 +113,7 @@ blocks:
   states:
     bus_sink: false
     bus_source: false
-    bus_structure: null
+    bus_structure:
     coordinate: [608, 12.0]
     rotation: 0
     state: enabled
@@ -175,7 +143,7 @@ blocks:
   states:
     bus_sink: false
     bus_source: false
-    bus_structure: null
+    bus_structure:
     coordinate: [176, 12.0]
     rotation: 0
     state: enabled
@@ -187,7 +155,7 @@ blocks:
   states:
     bus_sink: false
     bus_source: false
-    bus_structure: null
+    bus_structure:
     coordinate: [1456, 32.0]
     rotation: 0
     state: enabled
@@ -199,7 +167,7 @@ blocks:
   states:
     bus_sink: false
     bus_source: false
-    bus_structure: null
+    bus_structure:
     coordinate: [1328, 24.0]
     rotation: 0
     state: enabled
@@ -220,7 +188,7 @@ blocks:
   states:
     bus_sink: false
     bus_source: false
-    bus_structure: null
+    bus_structure:
     coordinate: [472, 12.0]
     rotation: 0
     state: enabled
@@ -250,7 +218,7 @@ blocks:
   states:
     bus_sink: false
     bus_source: false
-    bus_structure: null
+    bus_structure:
     coordinate: [784, 12.0]
     rotation: 0
     state: enabled
@@ -262,7 +230,7 @@ blocks:
   states:
     bus_sink: false
     bus_source: false
-    bus_structure: null
+    bus_structure:
     coordinate: [8, 148.0]
     rotation: 0
     state: enabled
@@ -274,7 +242,7 @@ blocks:
   states:
     bus_sink: false
     bus_source: false
-    bus_structure: null
+    bus_structure:
     coordinate: [8, 84.0]
     rotation: 0
     state: enabled
@@ -290,7 +258,7 @@ blocks:
   states:
     bus_sink: false
     bus_source: false
-    bus_structure: null
+    bus_structure:
     coordinate: [872, 168.0]
     rotation: 0
     state: enabled
@@ -306,7 +274,7 @@ blocks:
   states:
     bus_sink: false
     bus_source: false
-    bus_structure: null
+    bus_structure:
     coordinate: [320, 200.0]
     rotation: 0
     state: enabled
@@ -321,7 +289,7 @@ blocks:
   states:
     bus_sink: false
     bus_source: false
-    bus_structure: null
+    bus_structure:
     coordinate: [440, 320.0]
     rotation: 0
     state: enabled
@@ -340,7 +308,7 @@ blocks:
   states:
     bus_sink: false
     bus_source: false
-    bus_structure: null
+    bus_structure:
     coordinate: [112, 696.0]
     rotation: 0
     state: enabled
@@ -359,7 +327,7 @@ blocks:
   states:
     bus_sink: false
     bus_source: false
-    bus_structure: null
+    bus_structure:
     coordinate: [288, 424.0]
     rotation: 0
     state: enabled
@@ -377,7 +345,7 @@ blocks:
   states:
     bus_sink: false
     bus_source: false
-    bus_structure: null
+    bus_structure:
     coordinate: [1096, 168.0]
     rotation: 0
     state: enabled
@@ -395,7 +363,7 @@ blocks:
   states:
     bus_sink: false
     bus_source: false
-    bus_structure: null
+    bus_structure:
     coordinate: [1280, 1036.0]
     rotation: 180
     state: disabled
@@ -413,7 +381,7 @@ blocks:
   states:
     bus_sink: false
     bus_source: false
-    bus_structure: null
+    bus_structure:
     coordinate: [48, 420.0]
     rotation: 180
     state: enabled
@@ -433,7 +401,7 @@ blocks:
   states:
     bus_sink: false
     bus_source: false
-    bus_structure: null
+    bus_structure:
     coordinate: [584, 172.0]
     rotation: 0
     state: enabled
@@ -453,7 +421,7 @@ blocks:
   states:
     bus_sink: false
     bus_source: false
-    bus_structure: null
+    bus_structure:
     coordinate: [816, 272.0]
     rotation: 0
     state: enabled
@@ -471,7 +439,7 @@ blocks:
   states:
     bus_sink: false
     bus_source: false
-    bus_structure: null
+    bus_structure:
     coordinate: [664, 288.0]
     rotation: 0
     state: enabled
@@ -489,7 +457,7 @@ blocks:
   states:
     bus_sink: false
     bus_source: false
-    bus_structure: null
+    bus_structure:
     coordinate: [552, 552.0]
     rotation: 0
     state: enabled
@@ -507,7 +475,7 @@ blocks:
   states:
     bus_sink: false
     bus_source: false
-    bus_structure: null
+    bus_structure:
     coordinate: [776, 888.0]
     rotation: 0
     state: enabled
@@ -527,7 +495,7 @@ blocks:
   states:
     bus_sink: false
     bus_source: false
-    bus_structure: null
+    bus_structure:
     coordinate: [336, 900.0]
     rotation: 0
     state: enabled
@@ -546,7 +514,7 @@ blocks:
   states:
     bus_sink: false
     bus_source: false
-    bus_structure: null
+    bus_structure:
     coordinate: [1008, 900.0]
     rotation: 0
     state: enabled
@@ -567,42 +535,14 @@ blocks:
   states:
     bus_sink: false
     bus_source: false
-    bus_structure: null
+    bus_structure:
     coordinate: [488, 748.0]
     rotation: 0
     state: enabled
 - name: frame_logger
   id: epy_block
   parameters:
-    _source_code: "\"\"\"\nframe_logger - append each decoded 802.11 frame (frame_id\
-      \ + payload)\nto a JSONL file for the closed-loop adversarial pipeline.\n\n\
-      The TX (exp3_wifi_tx.py) builds each MSDU as\n    b'FRID' + uint32_be(frame_id)\
-      \ + b'x'*filler\nand decode_mac publishes cons(meta, blob) where blob is the\
-      \ PSDU minus\nFCS (24-byte MAC header + MSDU). decode_mac drops CRC-failed frames,\
-      \ so\nevery record written here is a CRC-valid decode. A frame is \"ours\" iff\n\
-      its MSDU begins with the FRID magic.\n\"\"\"\n\nimport json\nimport struct\n\
-      import time\nimport pmt\nfrom gnuradio import gr\n\n\nclass blk(gr.basic_block):\n\
-      \    \"\"\"Log decoded frames (frame_id + payload_hex) to a JSONL file.\"\"\"\
-      \n\n    MAC_HDR_LEN = 24       # 802.11 data-frame header, stripped to reach\
-      \ the MSDU\n    MAGIC = b'FRID'        # MSDU marker: b'FRID' + uint32_be(frame_id)\
-      \ + b'x'*filler\n\n    def __init__(self, log_path='/tmp/rx_frames.jsonl'):\n\
-      \        gr.basic_block.__init__(self, name='frame_logger',\n              \
-      \                  in_sig=[], out_sig=[])\n        self._log_path = log_path\n\
-      \        self._n = 0\n        self._skipped = 0\n        self.message_port_register_in(pmt.intern('in'))\n\
-      \        self.set_msg_handler(pmt.intern('in'), self.handle)\n\n    def handle(self,\
-      \ msg):\n        try:\n            data = bytes(pmt.u8vector_elements(pmt.cdr(msg)))\n\
-      \        except Exception:\n            return\n        # MSDU = decoded frame\
-      \ minus the 24-byte MAC header.\n        msdu = data[self.MAC_HDR_LEN:]\n  \
-      \      # Keep only our TX frames (MSDU starts with FRID magic); drop ambient\
-      \ WiFi.\n        if msdu[:4] != self.MAGIC or len(msdu) < 8:\n            self._skipped\
-      \ += 1\n            print('[frame_logger] skip ambient (#%d skipped) len=%d'\n\
-      \                  % (self._skipped, len(data)))\n            return\n     \
-      \   frame_id = struct.unpack('>I', msdu[4:8])[0]\n        self._n += 1\n   \
-      \     rec = {\n            'seq': self._n,\n            't': time.time(),\n\
-      \            'frame_id': frame_id,\n            'len': len(data),\n        \
-      \    'payload_hex': data.hex(),\n        }\n        with open(self._log_path,\
-      \ 'a') as f:\n            f.write(json.dumps(rec) + '\\n')\n        print('[frame_logger]\
-      \ #%d id=%s len=%d -> %s'\n              % (self._n, frame_id, len(data), self._log_path))\n"
+    _source_code: "\"\"\"\nframe_logger - append each decoded 802.11 frame (frame_id + payload)\nto a JSONL file for the closed-loop adversarial pipeline.\n\nThe TX (exp3_wifi_tx.py) builds each MSDU as\n    b'FRID' + uint32_be(frame_id) + b'x'*filler\nand decode_mac publishes cons(meta, blob) where blob is the PSDU minus\nFCS (24-byte MAC header + MSDU). decode_mac drops CRC-failed frames, so\nevery record written here is a CRC-valid decode. A frame is \"ours\" iff\nits MSDU begins with the FRID magic.\n\"\"\"\n\nimport json\nimport struct\nimport time\nimport pmt\nfrom gnuradio import gr\n\n\nclass blk(gr.basic_block):\n    \"\"\"Log decoded frames (frame_id + payload_hex) to a JSONL file.\"\"\"\n\n    MAC_HDR_LEN = 24       # 802.11 data-frame header, stripped to reach the MSDU\n    MAGIC = b'FRID'        # MSDU marker: b'FRID' + uint32_be(frame_id) + b'x'*filler\n\n    def __init__(self, log_path='/tmp/rx_frames.jsonl'):\n        gr.basic_block.__init__(self, name='frame_logger',\n                                in_sig=[], out_sig=[])\n        self._log_path = log_path\n        self._n = 0\n        self._skipped = 0\n        self.message_port_register_in(pmt.intern('in'))\n        self.set_msg_handler(pmt.intern('in'), self.handle)\n\n    def handle(self, msg):\n        try:\n            data = bytes(pmt.u8vector_elements(pmt.cdr(msg)))\n        except Exception:\n            return\n        # MSDU = decoded frame minus the 24-byte MAC header.\n        msdu = data[self.MAC_HDR_LEN:]\n        # Keep only our TX frames (MSDU starts with FRID magic); drop ambient WiFi.\n        if msdu[:4] != self.MAGIC or len(msdu) < 8:\n            self._skipped += 1\n            print('[frame_logger] skip ambient (#%d skipped) len=%d'\n                  % (self._skipped, len(data)))\n            return\n        frame_id = struct.unpack('>I', msdu[4:8])[0]\n        self._n += 1\n        rec = {\n            'seq': self._n,\n            't': time.time(),\n            'frame_id': frame_id,\n            'len': len(data),\n            'payload_hex': data.hex(),\n        }\n        with open(self._log_path, 'a') as f:\n            f.write(json.dumps(rec) + '\\n')\n        print('[frame_logger] #%d id=%s len=%d -> %s'\n              % (self._n, frame_id, len(data), self._log_path))\n"
     affinity: ''
     alias: ''
     comment: ''
@@ -610,65 +550,17 @@ blocks:
     maxoutbuf: '0'
     minoutbuf: '0'
   states:
-    _io_cache: ('frame_logger', 'blk', [('log_path', "'/tmp/rx_frames.jsonl'")], [('in',
-      'message', 1)], [], 'Log decoded frames (frame_id + payload_hex) to a JSONL
-      file.', [])
+    _io_cache: ('frame_logger', 'blk', [('log_path', "'/tmp/rx_frames.jsonl'")], [('in', 'message', 1)], [], 'Log decoded frames (frame_id + payload_hex) to a JSONL file.', [])
     bus_sink: false
     bus_source: false
-    bus_structure: null
+    bus_structure:
     coordinate: [1304, 760.0]
     rotation: 0
     state: enabled
 - name: link_stats
   id: epy_block
   parameters:
-    _source_code: "\"\"\"\nlink_stats — live decode-rate / loss readout for the FRID\
-      \ closed loop\n─────────────────────────────────────────────────────────────────────\n\
-      Drop this into wifi_rx.grc as a GRC **Python Block** (Embedded Python Block),\n\
-      and wire  decode_mac 'out'  ->  this block's 'in'  (same source as frame_logger).\n\
-      \nWhy decode-rate, not BER: decode_mac only emits CRC-VALID frames on 'out',\
-      \ and a\nCRC-valid frame is error-free — so live BER off this port is always\
-      \ ~0 and\nuseless. Instead we exploit that the TX stamps SEQUENTIAL frame_ids\
-      \ (FRID): the\nfraction of the transmitted id-range we actually decode is the\
-      \ real link-quality\nsignal. Tune rx_gain to MAXIMIZE the \"decode-rate now\"\
-      \ number.\n\nPrints every `report_sec`:\n  decode-rate now  : decoded / id-advance\
-      \ over the LAST interval  (the tuning knob)\n  cum              : unique decoded\
-      \ / full id span               (overall)\n  fps              : CRC-valid frames\
-      \ per second\n  ambient-skip     : non-FRID frames seen (other WiFi / false\
-      \ syncs) — high = noisy\n\nGRC: id `link_stats`, one message input port 'in',\
-      \ no outputs. Param: report_sec.\n\"\"\"\nimport time\nimport struct\nimport\
-      \ pmt\nfrom gnuradio import gr\n\n\nclass blk(gr.basic_block):\n    MAC_HDR_LEN\
-      \ = 24            # 802.11 data-frame header before the MSDU\n    MAGIC = b'FRID'\
-      \            # MSDU marker: b'FRID' + uint32_be(frame_id) + 'x'*fill\n\n   \
-      \ def __init__(self, report_sec=2.0):\n        gr.basic_block.__init__(self,\
-      \ name='link_stats', in_sig=[], out_sig=[])\n        self.report_sec = float(report_sec)\n\
-      \        self.ids = set()           # unique frame_ids decoded\n        self.n\
-      \ = 0                 # total CRC-valid FRID frames\n        self.skipped =\
-      \ 0           # non-FRID frames (ambient / false sync)\n        self.id_min\
-      \ = None\n        self.id_max = None\n        # interval bookkeeping for the\
-      \ \"now\" rate\n        self.t_last = time.time()\n        self.n_last = 0\n\
-      \        self.id_max_last = None\n        self.message_port_register_in(pmt.intern('in'))\n\
-      \        self.set_msg_handler(pmt.intern('in'), self.handle)\n\n    def handle(self,\
-      \ msg):\n        try:\n            data = bytes(pmt.u8vector_elements(pmt.cdr(msg)))\n\
-      \        except Exception:\n            return\n        msdu = data[self.MAC_HDR_LEN:]\n\
-      \        if msdu[:4] != self.MAGIC or len(msdu) < 8:\n            self.skipped\
-      \ += 1          # not ours: ambient WiFi or a false decode\n            return\n\
-      \        fid = struct.unpack('>I', msdu[4:8])[0]\n        self.ids.add(fid)\n\
-      \        self.n += 1\n        if self.id_min is None or fid < self.id_min:\n\
-      \            self.id_min = fid\n        if self.id_max is None or fid > self.id_max:\n\
-      \            self.id_max = fid\n\n        now = time.time()\n        if now\
-      \ - self.t_last >= self.report_sec and self.id_max is not None:\n          \
-      \  # recent interval: how many ids advanced vs how many we decoded\n       \
-      \     base = self.id_max_last if self.id_max_last is not None else self.id_min\n\
-      \            d_span = self.id_max - base\n            d_dec = self.n - self.n_last\n\
-      \            recent = min(100.0, 100.0 * d_dec / d_span) if d_span > 0 else\
-      \ 0.0\n            # cumulative\n            span = self.id_max - self.id_min\
-      \ + 1\n            cum = 100.0 * len(self.ids) / span if span else 0.0\n   \
-      \         fps = d_dec / (now - self.t_last)\n            print('[link_stats]\
-      \ decode-rate now %5.1f%%   cum %5.1f%% (%d/%d)   '\n                  '%5.1f\
-      \ fps   ambient-skip %d'\n                  % (recent, cum, len(self.ids), span,\
-      \ fps, self.skipped))\n            self.t_last = now\n            self.n_last\
-      \ = self.n\n            self.id_max_last = self.id_max\n"
+    _source_code: "\"\"\"\nlink_stats — live decode-rate / loss readout for the FRID closed loop\n─────────────────────────────────────────────────────────────────────\nDrop this into wifi_rx.grc as a GRC **Python Block** (Embedded Python Block),\nand wire  decode_mac 'out'  ->  this block's 'in'  (same source as frame_logger).\n\nWhy decode-rate, not BER: decode_mac only emits CRC-VALID frames on 'out', and a\nCRC-valid frame is error-free — so live BER off this port is always ~0 and\nuseless. Instead we exploit that the TX stamps SEQUENTIAL frame_ids (FRID): the\nfraction of the transmitted id-range we actually decode is the real link-quality\nsignal. Tune rx_gain to MAXIMIZE the \"decode-rate now\" number.\n\nPrints every `report_sec`:\n  decode-rate now  : decoded / id-advance over the LAST interval  (the tuning knob)\n  cum              : unique decoded / full id span               (overall)\n  fps              : CRC-valid frames per second\n  ambient-skip     : non-FRID frames seen (other WiFi / false syncs) — high = noisy\n\nGRC: id `link_stats`, one message input port 'in', no outputs. Param: report_sec.\n\"\"\"\nimport time\nimport struct\nimport pmt\nfrom gnuradio import gr\n\n\nclass blk(gr.basic_block):\n    MAC_HDR_LEN = 24            # 802.11 data-frame header before the MSDU\n    MAGIC = b'FRID'            # MSDU marker: b'FRID' + uint32_be(frame_id) + 'x'*fill\n\n    def __init__(self, report_sec=2.0):\n        gr.basic_block.__init__(self, name='link_stats', in_sig=[], out_sig=[])\n        self.report_sec = float(report_sec)\n        self.ids = set()           # unique frame_ids decoded\n        self.n = 0                 # total CRC-valid FRID frames\n        self.skipped = 0           # non-FRID frames (ambient / false sync)\n        self.id_min = None\n        self.id_max = None\n        # interval bookkeeping for the \"now\" rate\n        self.t_last = time.time()\n        self.n_last = 0\n        self.id_max_last = None\n        self.message_port_register_in(pmt.intern('in'))\n        self.set_msg_handler(pmt.intern('in'), self.handle)\n\n    def handle(self, msg):\n        try:\n            data = bytes(pmt.u8vector_elements(pmt.cdr(msg)))\n        except Exception:\n            return\n        msdu = data[self.MAC_HDR_LEN:]\n        if msdu[:4] != self.MAGIC or len(msdu) < 8:\n            self.skipped += 1          # not ours: ambient WiFi or a false decode\n            return\n        fid = struct.unpack('>I', msdu[4:8])[0]\n        self.ids.add(fid)\n        self.n += 1\n        if self.id_min is None or fid < self.id_min:\n            self.id_min = fid\n        if self.id_max is None or fid > self.id_max:\n            self.id_max = fid\n\n        now = time.time()\n        if now - self.t_last >= self.report_sec and self.id_max is not None:\n            # recent interval: how many ids advanced vs how many we decoded\n            base = self.id_max_last if self.id_max_last is not None else self.id_min\n            d_span = self.id_max - base\n            d_dec = self.n - self.n_last\n            recent = min(100.0, 100.0 * d_dec / d_span) if d_span > 0 else 0.0\n            # cumulative\n            span = self.id_max - self.id_min + 1\n            cum = 100.0 * len(self.ids) / span if span else 0.0\n            fps = d_dec / (now - self.t_last)\n            print('[link_stats] decode-rate now %5.1f%%   cum %5.1f%% (%d/%d)   '\n                  '%5.1f fps   ambient-skip %d'\n                  % (recent, cum, len(self.ids), span, fps, self.skipped))\n            self.t_last = now\n            self.n_last = self.n\n            self.id_max_last = self.id_max\n"
     affinity: ''
     alias: ''
     comment: ''
@@ -676,11 +568,10 @@ blocks:
     maxoutbuf: '0'
     minoutbuf: '0'
   states:
-    _io_cache: ('link_stats', 'blk', [('report_sec', '2.0')], [('in', 'message', 1)],
-      [], '', [])
+    _io_cache: ('link_stats', 'blk', [('report_sec', '2.0')], [('in', 'message', 1)], [], '', [])
     bus_sink: false
     bus_source: false
-    bus_structure: null
+    bus_structure:
     coordinate:
     - 1304
     - 900.0
@@ -699,7 +590,7 @@ blocks:
   states:
     bus_sink: false
     bus_source: false
-    bus_structure: null
+    bus_structure:
     coordinate: [1096, 756.0]
     rotation: 0
     state: enabled
@@ -719,7 +610,7 @@ blocks:
   states:
     bus_sink: false
     bus_source: false
-    bus_structure: null
+    bus_structure:
     coordinate: [776, 748.0]
     rotation: 0
     state: enabled
@@ -736,7 +627,7 @@ blocks:
   states:
     bus_sink: false
     bus_source: false
-    bus_structure: null
+    bus_structure:
     coordinate: [1088, 1028.0]
     rotation: 180
     state: enabled
@@ -754,7 +645,7 @@ blocks:
   states:
     bus_sink: false
     bus_source: false
-    bus_structure: null
+    bus_structure:
     coordinate: [328, 532.0]
     rotation: 0
     state: enabled
@@ -773,7 +664,7 @@ blocks:
   states:
     bus_sink: false
     bus_source: false
-    bus_structure: null
+    bus_structure:
     coordinate: [1120, 272.0]
     rotation: 0
     state: enabled
@@ -790,7 +681,7 @@ blocks:
   states:
     bus_sink: false
     bus_source: false
-    bus_structure: null
+    bus_structure:
     coordinate: [776, 1012.0]
     rotation: 180
     state: enabled
@@ -882,7 +773,7 @@ blocks:
   states:
     bus_sink: false
     bus_source: false
-    bus_structure: null
+    bus_structure:
     coordinate: [352, 1004.0]
     rotation: 180
     state: disabled
@@ -979,7 +870,7 @@ blocks:
   states:
     bus_sink: false
     bus_source: false
-    bus_structure: null
+    bus_structure:
     coordinate: [1328, 164.0]
     rotation: 0
     state: enabled
@@ -1415,7 +1306,7 @@ blocks:
   states:
     bus_sink: false
     bus_source: false
-    bus_structure: null
+    bus_structure:
     coordinate: [32, 216]
     rotation: 0
     state: enabled
@@ -1423,8 +1314,7 @@ blocks:
 - id: epy_block
   name: ber_sink_0
   parameters:
-    _source_code: "\"\"\"\nber_sink - live BER/FER for the FRID closed loop (per-frame-seeded payload).\n\nConsumes decode_mac 'out' (CRC-valid) on 'valid' and CRC-failed frames on\n'failed' (requires the patched ieee802_11 with the 'failed' port). BER is\ncomputed vs the KNOWN TX payload: FRID magic + per-frame [A-Za-z0-9] filler\nderived deterministically from (seed, frame_id) -- IDENTICAL to the TX block\nexp3_varied_payload_id in wifi_tx_varied.grc -- with the 4 id bytes excluded.\nThis makes a true BER possible even though the payload varies every frame.\nFailed frames whose per-frame match-BER >= noise_threshold are treated as noise\nfalse-syncs and discarded. Prints every report_sec, and a flushed FINAL summary\non stop(), so a timed/Ctrl-C run always ends with the cumulative BER.\n\nWhen ZERO bit errors are observed the reported BER is the theoretical 95% upper\nconfidence bound 2.996/N (rule of three), flagged '[0-err 95%UB]', not 0.\n\nNB: `seed` must equal the TX block's seed, and PDU_LENGTH its pdu_length.\n\"\"\"\nimport time\nimport struct\nimport random\nimport string\nimport pmt\nfrom gnuradio import gr\n\nMAC_HDR_LEN = 24\nMAGIC = b'FRID'\nPDU_LENGTH = 500\nFILL_LEN = PDU_LENGTH - 8\nALPHABET = string.ascii_letters + string.digits   # fixed order; MUST match the TX block\n_POPCOUNT = bytes(bin(i).count('1') for i in range(256))\n\n\ndef frid_filler(seed, frame_id, n):\n    \"\"\"Deterministic per-frame filler from (seed, frame_id); identical to TX.\"\"\"\n    rng = random.Random(((int(seed) & 0xFFFFFFFF) << 32) | (int(frame_id) & 0xFFFFFFFF))\n    return bytes(ord(rng.choice(ALPHABET)) for _ in range(n))\n\n\nclass blk(gr.basic_block):\n    def __init__(self, report_sec=2.0, noise_threshold=0.30, seed=0):\n        gr.basic_block.__init__(self, name='ber_sink', in_sig=[], out_sig=[])\n        self.report_sec = float(report_sec)\n        self.noise_threshold = float(noise_threshold)\n        self.seed = int(seed)\n        self.valid = 0\n        self.failed = 0\n        self.discarded = 0\n        self.err_bits = 0\n        self.tot_bits = 0\n        self.ids = set()\n        self.id_min = None\n        self.id_max = None\n        self.t0 = time.time()\n        self.t_last = self.t0\n        self.message_port_register_in(pmt.intern('valid'))\n        self.message_port_register_in(pmt.intern('failed'))\n        self.set_msg_handler(pmt.intern('valid'), self.handle_valid)\n        self.set_msg_handler(pmt.intern('failed'), self.handle_failed)\n        # Startup filler fingerprint: must match the TX block's line exactly.\n        # A mismatch means TX and RX disagree on seed/scheme -> BER will be bogus.\n        fp = frid_filler(self.seed, 0, 8).decode() + '|' + frid_filler(self.seed, 1, 8).decode()\n        print('[filler-fp] RX ber_sink seed=%d fp=%s' % (self.seed, fp), flush=True)\n\n    def handle_valid(self, msg):\n        self._handle(msg, True)\n\n    def handle_failed(self, msg):\n        self._handle(msg, False)\n\n    def _bit_errors(self, got, exp):\n        n = min(len(got), len(exp))\n        e = 0\n        for i in range(n):\n            e += _POPCOUNT[got[i] ^ exp[i]]\n        return e, n * 8\n\n    def _report(self, final=False):\n        now = time.time()\n        rx = self.valid + self.failed\n        # Measured BER, except when ZERO bit errors are observed: 0 errors does not\n        # prove BER==0, it only bounds it. Report the theoretical 95% upper\n        # confidence bound (rule of three: -ln(0.05)=2.996) => BER = 2.996 / N.\n        zero_ub = False\n        if self.tot_bits:\n            ber = self.err_bits / self.tot_bits\n            if self.err_bits == 0:\n                ber = 2.996 / self.tot_bits\n                zero_ub = True\n        else:\n            ber = 0.0\n        fer = self.failed / rx if rx else 0.0\n        tag = '[ber] FINAL' if final else '[ber]'\n        line = ('%s t=%5.1fs rx=%d (ok=%d fail=%d) noise-drop=%d FER_rx=%4.1f%% BER=%.2e%s (%d/%d)'\n                % (tag, now - self.t0, rx, self.valid, self.failed, self.discarded,\n                   100 * fer, ber, '\
-      \ [0-err 95%UB]' if zero_ub else '',\n                   self.err_bits, self.tot_bits))\n        if self.ids:\n            span = self.id_max - self.id_min + 1\n            line += '  decode-rate=%4.1f%% (%d/%d)' % (100.0 * len(self.ids) / span, len(self.ids), span)\n        print(line, flush=True)\n        self.t_last = now\n\n    def _handle(self, msg, ok):\n        try:\n            data = bytes(pmt.u8vector_elements(pmt.cdr(msg)))\n        except Exception:\n            return\n        msdu = data[MAC_HDR_LEN:]\n        if len(msdu) < 8:\n            return\n        fid = struct.unpack('>I', msdu[4:8])[0]\n        exp_fill = frid_filler(self.seed, fid, FILL_LEN)\n        eb_m, tb_m = self._bit_errors(msdu[:4], MAGIC)\n        eb_f, tb_f = self._bit_errors(msdu[8:PDU_LENGTH], exp_fill)\n        eb = eb_m + eb_f\n        tb = tb_m + tb_f\n        if not ok:\n            frame_ber = eb / tb if tb else 1.0\n            if frame_ber >= self.noise_threshold:\n                self.discarded += 1\n                return\n        self.err_bits += eb\n        self.tot_bits += tb\n        if ok:\n            self.valid += 1\n            self.ids.add(fid)\n            self.id_min = fid if self.id_min is None else min(self.id_min, fid)\n            self.id_max = fid if self.id_max is None else max(self.id_max, fid)\n        else:\n            self.failed += 1\n        if time.time() - self.t_last >= self.report_sec:\n            self._report()\n\n    def stop(self):\n        # Called when the flowgraph stops (incl. SIGTERM from `timeout` and\n        # Ctrl-C): emit the cumulative FINAL BER, flushed so it is not lost.\n        print('\\n================ BER summary ================', flush=True)\n        self._report(final=True)\n        print('=============================================', flush=True)\n        return True\n"
+    _source_code: "\"\"\"\nber_sink - live BER/FER for the FRID closed loop (per-frame-seeded payload).\n\nConsumes decode_mac 'out' (CRC-valid) on 'valid' and CRC-failed frames on\n'failed' (requires the patched ieee802_11 with the 'failed' port). BER is\ncomputed vs the KNOWN TX payload: FRID magic + per-frame [A-Za-z0-9] filler\nderived deterministically from (seed, frame_id) -- IDENTICAL to the TX block\nexp3_varied_payload_id in wifi_tx_varied.grc -- with the 4 id bytes excluded.\nThis makes a true BER possible even though the payload varies every frame.\nFailed frames whose per-frame match-BER >= noise_threshold are treated as noise\nfalse-syncs and discarded. Prints every report_sec, and a flushed FINAL summary\non stop(), so a timed/Ctrl-C run always ends with the cumulative BER.\n\nWhen ZERO bit errors are observed the reported BER is the theoretical 95% upper\nconfidence bound 2.996/N (rule of three), flagged '[0-err 95%UB]', not 0.\n\nNB: `seed` must equal the TX block's seed, and PDU_LENGTH its pdu_length.\n\"\"\"\nimport time\nimport struct\nimport random\nimport string\nimport pmt\nfrom gnuradio import gr\n\nMAC_HDR_LEN = 24\nMAGIC = b'FRID'\nPDU_LENGTH = 500\nFILL_LEN = PDU_LENGTH - 8\nALPHABET = string.ascii_letters + string.digits   # fixed order; MUST match the TX block\n_POPCOUNT = bytes(bin(i).count('1') for i in range(256))\n\n\ndef frid_filler(seed, frame_id, n):\n    \"\"\"Deterministic per-frame filler from (seed, frame_id); identical to TX.\"\"\"\n    rng = random.Random(((int(seed) & 0xFFFFFFFF) << 32) | (int(frame_id) & 0xFFFFFFFF))\n    return bytes(ord(rng.choice(ALPHABET)) for _ in range(n))\n\n\nclass blk(gr.basic_block):\n    def __init__(self, report_sec=2.0, noise_threshold=0.30, seed=0):\n        gr.basic_block.__init__(self, name='ber_sink', in_sig=[], out_sig=[])\n        self.report_sec = float(report_sec)\n        self.noise_threshold = float(noise_threshold)\n        self.seed = int(seed)\n        self.valid = 0\n        self.failed = 0\n        self.discarded = 0\n        self.err_bits = 0\n        self.tot_bits = 0\n        self.ids = set()\n        self.id_min = None\n        self.id_max = None\n        self.t0 = time.time()\n        self.t_last = self.t0\n        self.message_port_register_in(pmt.intern('valid'))\n        self.message_port_register_in(pmt.intern('failed'))\n        self.set_msg_handler(pmt.intern('valid'), self.handle_valid)\n        self.set_msg_handler(pmt.intern('failed'), self.handle_failed)\n        # Startup filler fingerprint: must match the TX block's line exactly.\n        # A mismatch means TX and RX disagree on seed/scheme -> BER will be bogus.\n        fp = frid_filler(self.seed, 0, 8).decode() + '|' + frid_filler(self.seed, 1, 8).decode()\n        print('[filler-fp] RX ber_sink seed=%d fp=%s' % (self.seed, fp), flush=True)\n\n    def handle_valid(self, msg):\n        self._handle(msg, True)\n\n    def handle_failed(self, msg):\n        self._handle(msg, False)\n\n    def _bit_errors(self, got, exp):\n        n = min(len(got), len(exp))\n        e = 0\n        for i in range(n):\n            e += _POPCOUNT[got[i] ^ exp[i]]\n        return e, n * 8\n\n    def _report(self, final=False):\n        now = time.time()\n        rx = self.valid + self.failed\n        # Measured BER, except when ZERO bit errors are observed: 0 errors does not\n        # prove BER==0, it only bounds it. Report the theoretical 95% upper\n        # confidence bound (rule of three: -ln(0.05)=2.996) => BER = 2.996 / N.\n        zero_ub = False\n        if self.tot_bits:\n            ber = self.err_bits / self.tot_bits\n            if self.err_bits == 0:\n                ber = 2.996 / self.tot_bits\n                zero_ub = True\n        else:\n            ber = 0.0\n        fer = self.failed / rx if rx else 0.0\n        tag = '[ber] FINAL' if final else '[ber]'\n        line = ('%s t=%5.1fs rx=%d (ok=%d fail=%d) noise-drop=%d FER_rx=%4.1f%% BER=%.2e%s (%d/%d)'\n                % (tag, now - self.t0, rx, self.valid, self.failed, self.discarded,\n                   100 * fer, ber, ' [0-err 95%UB]' if zero_ub else '',\n                   self.err_bits, self.tot_bits))\n        if self.ids:\n            span = self.id_max - self.id_min + 1\n            line += '  decode-rate=%4.1f%% (%d/%d)' % (100.0 * len(self.ids) / span, len(self.ids), span)\n        print(line, flush=True)\n        self.t_last = now\n\n    def _handle(self, msg, ok):\n        try:\n            data = bytes(pmt.u8vector_elements(pmt.cdr(msg)))\n        except Exception:\n            return\n        msdu = data[MAC_HDR_LEN:]\n        if len(msdu) < 8:\n            return\n        fid = struct.unpack('>I', msdu[4:8])[0]\n        exp_fill = b'x' * FILL_LEN\n        eb_m, tb_m = self._bit_errors(msdu[:4], MAGIC)\n        eb_f, tb_f = self._bit_errors(msdu[8:PDU_LENGTH], exp_fill)\n        eb = eb_m + eb_f\n        tb = tb_m + tb_f\n        if not ok:\n            frame_ber = eb / tb if tb else 1.0\n            if frame_ber >= self.noise_threshold:\n                self.discarded += 1\n                return\n        self.err_bits += eb\n        self.tot_bits += tb\n        if ok:\n            self.valid += 1\n            self.ids.add(fid)\n            self.id_min = fid if self.id_min is None else min(self.id_min, fid)\n            self.id_max = fid if self.id_max is None else max(self.id_max, fid)\n        else:\n            self.failed += 1\n        if time.time() - self.t_last >= self.report_sec:\n            self._report()\n\n    def stop(self):\n        # Called when the flowgraph stops (incl. SIGTERM from `timeout` and\n        # Ctrl-C): emit the cumulative FINAL BER, flushed so it is not lost.\n        print('\\n================ BER summary ================', flush=True)\n        self._report(final=True)\n        print('=============================================', flush=True)\n        return True\n"
     affinity: ''
     alias: ''
     comment: ''
@@ -1437,7 +1327,7 @@ blocks:
     _io_cache: ('ber_sink', 'blk', [('report_sec', '2.0'), ('noise_threshold', '0.3'), ('seed', '0')], [('valid', 'message', 1), ('failed', 'message', 1)], [], '', ['noise_threshold', 'report_sec', 'seed'])
     bus_sink: false
     bus_source: false
-    bus_structure: null
+    bus_structure:
     coordinate:
     - 352
     - 568.0
