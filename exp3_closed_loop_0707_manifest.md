@@ -51,8 +51,8 @@ All DAC-safe (peak ≤0.95). NOTE: v1 labels were ~25 dB optimistic — see the 
 - `targeted/dac_safe_eot/adv_frame.bin` + `adv_perturbation_psr_*.bin`
 - `untgt/dac_safe_eot/adv_frame.bin` + `adv_perturbation_psr_*.bin`
 Raw δ archived: `delta_{tgt,untgt}_adveot/` (150 each). All DAC-safe (peak 0.950), PSR −30…+5.
-**⚠️ `dac_safe_eot/` are still v1 (stale −25 dB scaling)** — pending v2 rebuild (needs T91 for
-`reconstruct` on `frame_run_2`). The no-eot single + 2-channel bundles are already v2-corrected.
+**✅ v2-corrected** (rebuilt 2026-07-07 with the measure-the-base fix; realized == label). All six
+bundles are now v2.
 
 ## Full inventory (6 bundles)
 | targetedness | single (no-eot) | 2-ch (no-eot) | 2-ch (adv-eot) |
