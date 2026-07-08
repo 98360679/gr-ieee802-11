@@ -79,8 +79,22 @@ def main():
         raise SystemExit(f"length mismatch: frame {len(frame)} vs pert {len(base)} "
                          "(frame/pert must be the aligned build_adv_replay pair)")
 
-    # ch1 scaled to each target PSR, relative to the PSR baked into --pert
-    scaled = {psr: (base * 10 ** ((psr - a.base_psr) / 20)).astype(C64)
+    # MEASURE the realized base PSR instead of trusting --base-psr: the pert is
+    # crafted on the (low-amplitude) RX frame but injected into the (higher-amplitude)
+    # TX frame_run, so its true level vs the frame is NOT --base-psr. Measure
+    # ||pert|| / ||frame|| over the payload region (where pert is nonzero) and scale
+    # from that so realized PSR == label.
+    pmask = np.abs(base) > 1e-6
+    if pmask.sum() == 0:
+        raise SystemExit("perturbation is all-zero — nothing to scale")
+    meas_base = 20 * np.log10(
+        np.sqrt(np.sum(np.abs(base[pmask]) ** 2)) /
+        (np.sqrt(np.sum(np.abs(frame[pmask]) ** 2)) + 1e-30))
+    print(f"measured base PSR of --pert vs frame (payload region): {meas_base:+.1f} dB "
+          f"(--base-psr hint was {a.base_psr:+.1f}; using MEASURED)\n")
+
+    # ch1 scaled to each target PSR, relative to the MEASURED base PSR
+    scaled = {psr: (base * 10 ** ((psr - meas_base) / 20)).astype(C64)
               for psr in a.psr}
 
     # one common factor so the loudest peak across frame + all perts == headroom
