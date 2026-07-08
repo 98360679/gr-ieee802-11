@@ -47,12 +47,12 @@ distinction being \emph{addition through a foreign non-invertible operator} vers
 \end{abstract}
 
 \noindent
-We formalize both halves of this result: why a targeted perturbation $\delta$ that flips a
-device--fingerprint classifier from a legitimate device to a target with probability~$1$ at
-the receiver input yields $\approx 0$ fooling when radiated by a \emph{second} transmitter
-(the hardware barrier, deeper than Kim's channel--limited result), and why the same
-$\delta$ \emph{does} reach the target when pre--distorted through the legitimate
-transmitter's own invertible hardware.
+We formalize both halves of this result: first (\S\ref{sec:single}) that a targeted perturbation
+$\delta$ \emph{does} reach the target when pre--distorted through the legitimate transmitter's own
+\emph{invertible} hardware, with the required drive available in closed form; then that the same
+$\delta$ yields $\approx 0$ fooling when instead radiated by a \emph{second} transmitter, through
+that radio's foreign, \emph{non--invertible} hardware (the hardware barrier, strictly deeper than
+Kim's channel--limited result).
 
 \section*{Notation}
 \begin{center}\small
@@ -108,7 +108,7 @@ $\omega_d$, and phase noise $\xi_d$. Collect the impairment parameters as the
 \ba_d \;=\; (g_d,\,M_d,\,c_d,\,\omega_d,\,\xi_d).
 \end{equation}
 
-\section{Received signal and classifier}
+\section{Received signal and classifier}\label{sec:classifier}
 Through channel $h_d$ with noise $w$,
 \begin{equation}
 y \;=\; h_d * \Top{d}(u) + w .
@@ -127,7 +127,7 @@ s_k(y) \;\approx\; S_k\!\big(\hat\ba(y)\big),
 \textbf{Key:} $f$ is a function of the hardware parameters $\ba$, not of the raw
 content.
 
-\section{Digital targeted PGD (construction of $\delta$)}
+\section{Digital targeted PGD (construction of $\delta$)}\label{sec:pgd}
 Take a captured device~6 frame $x$ with $f(x)=\text{dev }6$
 (i.e.\ $\hat\ba(x)\approx\ba_6$). Solve, over an $\ell_2$ ball of radius
 $\varepsilon\|x\|$,
@@ -150,6 +150,115 @@ $\delta^\star$ and the input:
 \begin{equation}
 f\!\big(x+\delta^\star\big) = \text{dev }4. \qquad\checkmark
 \end{equation}
+
+\section{Single--channel pre--distortion: the target \emph{is} reachable}\label{sec:single}
+The attacker need not radiate $\delta$ from a separate device. Suppose the attacker instead
+controls the \emph{digital baseband} fed to the legitimate transmitter and injects the
+perturbation there, \emph{upstream} of the hardware: $u\mapsto u+\delta$. Write $\ell$ for the
+legitimate device and $\tau$ for the target (in our experiments $\ell=\text{device }6$,
+$\tau=\text{device }4$). The transmitted, then received, signal is
+\begin{equation}
+y_{\mathrm{SC}} \;=\; h_\ell * \Top{\ell}(u+\delta) \;+\; w .
+\label{eq:sc}
+\end{equation}
+We prove constructively that a budget--limited $\delta$ exists for which
+$f(y_{\mathrm{SC}})=\tau$.
+
+\paragraph{Step 1 --- isolate what the attacker controls.} The classifier reads the emitted
+signal, so what matters is how the emission moves when the baseband is perturbed. Split the
+emission into its clean part plus a controllable term,
+\begin{equation}
+\Top{\ell}(u+\delta)\;=\;\Top{\ell}(u)\;+\;e(\delta),
+\qquad
+e(\delta)\;:=\;\Top{\ell}(u+\delta)-\Top{\ell}(u).
+\label{eq:emiss-split}
+\end{equation}
+At $\delta=0$ the emission is the clean device--$\ell$ signal $\Top{\ell}(u)$, whose signature is
+$\ba_\ell$, so $f=\ell$. The attacker steers the reading \emph{only} through the emission
+perturbation $e(\delta)$; the whole question is which $e$ are achievable.
+
+\paragraph{Step 2 --- linearize the hardware.} For a budget--limited drive, expand $\Top{\ell}$ to
+first order about $u$:
+\begin{equation}
+e(\delta)\;=\;\Top{\ell}(u+\delta)-\Top{\ell}(u)\;=\;J_\ell(u)\,\delta\;+\;O(\|\delta\|^2),
+\qquad
+J_\ell(u)\;:=\;\left.\frac{\partial\Top{\ell}}{\partial u}\right|_{u}.
+\label{eq:taylor}
+\end{equation}
+Differentiating the operator \eqref{eq:Top} sample--by--sample --- the DC offset $c_\ell$ and phase
+noise $\xi_\ell$ do not depend on $\delta$, the CFO $e^{j\omega_\ell n}$ is a fixed multiplier, the
+I/Q mixing $M_\ell$ is linear, and the PA $g_\ell$ acts pointwise --- gives the Jacobian in closed
+form, a product of three per--sample factors,
+\begin{equation}
+J_\ell(u)\;=\;
+\underbrace{\operatorname{diag}\!\big(g_\ell'(M_\ell u[n]+c_\ell)\big)}_{\text{PA slope}}
+\;\cdot\;
+\underbrace{M_\ell}_{\text{I/Q mixing}}
+\;\cdot\;
+\underbrace{e^{\,j\omega_\ell n}}_{\text{CFO}} .
+\label{eq:jac}
+\end{equation}
+
+\paragraph{Step 3 --- the Jacobian is invertible.} Each factor of \eqref{eq:jac} is invertible
+under the radio's normal operating conditions:
+\begin{itemize}\itemsep2pt
+\item $\operatorname{diag}\!\big(g_\ell'(\cdot)\big)$ --- invertible iff every entry $g_\ell'\neq0$,
+i.e.\ the PA is driven \emph{below hard saturation}, where its AM/AM curve is strictly increasing;
+\item $M_\ell$ --- invertible iff $\det M_\ell\neq0$, true for any physical front end, on which the
+I/Q imbalance is a small perturbation of the identity;
+\item $e^{\,j\omega_\ell n}$ --- unit modulus, hence invertible at every sample.
+\end{itemize}
+A product of invertible maps is invertible, so $J_\ell(u)$ has \emph{full rank}.
+
+\paragraph{Step 4 --- the reachable set is full--dimensional.} The emission perturbations the
+attacker can produce within the budget $\|\delta\|\le\varepsilon\|u\|$ form
+\begin{equation}
+\mathcal{P}_\ell\;=\;\big\{\,e(\delta):\|\delta\|\le\varepsilon\|u\|\,\big\}
+\;\approx\;J_\ell(u)\cdot\mathrm{Ball}\!\big(\varepsilon\|u\|\big).
+\label{eq:reachset}
+\end{equation}
+A full--rank linear map carries a ball to a full--dimensional ellipsoid about the origin. Hence
+$\mathcal{P}_\ell$ contains a neighbourhood of $0$ in emission space and \emph{grows to cover every
+direction} as $\varepsilon$ increases: no emission direction is blocked.
+
+\paragraph{Step 5 --- reaching the target, in closed form.} By construction (\S\ref{sec:pgd}) the
+digital optimum $\delta^\star_{\mathrm{dig}}$ shifts the extracted signature into the
+$\tau$--decision region. Because $f$ is channel--invariant (\S\ref{sec:classifier}), this shift is a
+property of the \emph{emission}: let $e^\star$ be the emission--domain perturbation that carries the
+signature to $\tau$. Reaching the target then means realizing $e(\delta)=e^\star$, which by Step~3
+has the closed--form solution
+\begin{equation}
+\boxed{\;\delta^\star\;\approx\;J_\ell(u)^{-1}\,e^\star\;}
+\label{eq:sc-inverse}
+\end{equation}
+The drive $\delta^\star$ \emph{exists}: the invertible own--hardware Jacobian synthesizes the
+required emission perturbation from a baseband drive, and by Step~4 $e^\star\in\mathcal{P}_\ell$ once
+$\varepsilon\ge\|\delta^\star\|/\|u\|$.
+
+\paragraph{Step 6 --- the crossover exists.} As $\varepsilon$ grows from $0$, the reading moves
+continuously from device $\ell$ along the reachable direction $e^\star$. Since $e^\star$ is, by
+definition, the direction the classifier reads as $\tau$, and it lies in $\mathcal{P}_\ell$ for
+$\varepsilon$ large enough (Step~4), there is a finite drive at which the decision crosses into the
+target:
+\begin{equation}
+\boxed{\;
+\exists\,\varepsilon^\star:\quad
+f\big(h_\ell*\Top{\ell}(u+\delta^\star)\big)=\tau,
+\qquad\|\delta^\star\|=\varepsilon^\star\|u\| .
+\;}
+\label{eq:reach}
+\end{equation}
+The mechanism is that $\delta$ is \emph{pre--composed} with the transmitter's own hardware: it
+rides through the very operator $\Top{\ell}$ that stamps the legitimate fingerprint, and because
+that operator's Jacobian is full rank, the hardware passes the perturbation faithfully into every
+emission direction rather than collapsing it.\hfill$\square$
+
+\paragraph{Experimental confirmation.} With correctly scaled $\delta$ (realized PSR $=$ label)
+injected into the legitimate transmitter's baseband, the reading flips to the target at the
+$\varepsilon^\star$ corresponding to $\mathrm{PSR}\approx0$~dB
+($\|\delta\|\approx\|u_{\mathrm{payload}}\|$): $f(y_{\mathrm{SC}})=\tau$ for $71\%$ of frames,
+versus $0\%$ for a \emph{random} $\delta$ of equal power --- confirming the flip follows the crafted
+direction $e^\star$ and is not loud--signal collapse.
 
 \section{Over-the-air (two-channel) signal}
 Device~6 emits the legit frame $h_6*\Top{6}(u)$ (carries $\ba_6$); the adversary
@@ -200,74 +309,17 @@ $\delta^\star$ is a direction in $\nabla f$--space; $\mathcal{P}_a$ is a manifol
 hardware--$\ba_a$--space; generically $\delta^\star\notin\mathcal{P}_a$. This is the
 observed $0\%$.
 
-\section{Single--channel pre--distortion: the target \emph{is} reachable}\label{sec:single}
-The barrier above is specific to a \emph{foreign} radiator. Consider instead a
-\emph{single--channel} (pre--distortion) attack in which the drive $\delta$ is injected into
-the legitimate transmitter's baseband, \emph{upstream} of its own hardware. Write $\ell$ for
-the legitimate device and $\tau$ for the target device (in our experiments
-$\ell=\text{dev }6$, $\tau=\text{dev }4$). The emitted signal is
-\begin{equation}
-y_{\mathrm{SC}} \;=\; h_\ell * \Top{\ell}(u+\delta) \;+\; w .
-\label{eq:sc}
-\end{equation}
-Now $\delta$ is \emph{pre--composed} with $\Top{\ell}$: it passes through the \emph{same}
-operator as the legitimate signal, not through a foreign $\Top{a}$. The perturbation it
-places on the emission is the operator difference
-\begin{equation}
-e(\delta) \;=\; \Top{\ell}(u+\delta) - \Top{\ell}(u)
-\;\approx\; J_\ell(u)\,\delta,
-\qquad
-J_\ell(u) \;=\; \operatorname{diag}\!\big(g_\ell'(M_\ell u + c_\ell)\big)\,M_\ell\,e^{\,j\omega_\ell n},
-\label{eq:jac}
-\end{equation}
-where $J_\ell(u)$ is the Jacobian of $\Top{\ell}$ at $u$. Wherever the PA is not in hard
-saturation ($g_\ell'\neq 0$) and the I/Q mixing $M_\ell$ is non--singular, $J_\ell(u)$ has
-\emph{full rank} and is invertible --- in contrast to $\Top{a}$, which is foreign and
-non--invertible past saturation.
-
-\paragraph{Reachable set.} The physically emittable perturbations are
-\begin{equation}
-\mathcal{P}_\ell \;=\; \big\{\,\Top{\ell}(u+\delta)-\Top{\ell}(u)\;:\;\|\delta\|\le\varepsilon\|u\|\,\big\}
-\;\approx\; J_\ell(u)\cdot\mathrm{Ball}\!\big(\varepsilon\|u\|\big).
-\end{equation}
-Because $J_\ell(u)$ is full rank, $\mathcal{P}_\ell$ is a \emph{full--dimensional}
-neighbourhood of the origin in emission space: it spans every direction as $\varepsilon$
-grows. In particular the emission--domain direction $d^\star = h_\ell*\delta^\star$ that the
-classifier reads as device~$\tau$ lies in $\mathcal{P}_\ell$ for large enough $\varepsilon$, and
-the required drive \emph{exists} in closed form (to first order),
-\begin{equation}
-\delta^\star \;\approx\; J_\ell(u)^{-1}\,d^\star
-\;=\; J_\ell(u)^{-1}\big(h_\ell * \delta^\star_{\mathrm{dig}}\big),
-\label{eq:sc-inverse}
-\end{equation}
-in sharp contrast to the two--channel condition \eqref{eq:invert}, where
-$\delta'=\Top{a}^{-1}(h_a^{-1}(\delta^\star))$ does \emph{not} exist. The whole distinction is
-\emph{pre--composition with an invertible own--hardware operator} versus \emph{addition through
-a foreign non--invertible one}:
+This is the mirror image of the single--channel case (\S\ref{sec:single}): there $\delta$ was
+\emph{pre--composed} with the transmitter's \emph{own} invertible operator $\Top{\ell}$, so the
+required drive existed in closed form \eqref{eq:sc-inverse}; here $\delta'$ is instead \emph{added
+through a foreign} operator $\Top{a}$ that stamps $\ba_a$ on everything it emits and admits no such
+inverse. The decisive distinction is \emph{pre--composition with an invertible own operator} versus
+\emph{addition through a foreign non--invertible one}:
 \begin{equation}
 \underbrace{\Top{\ell}(u+\delta)}_{\text{$\delta$ \emph{inside} $\Top{\ell}$ (invertible)}}
 \quad\text{vs.}\quad
 \underbrace{\Top{\ell}(u)+h_a{*}\Top{a}(\delta')}_{\text{$\delta'$ \emph{through} foreign $\Top{a}$}} .
 \end{equation}
-Hence there is a finite drive at which the reading crosses into device~$\tau$:
-\begin{equation}
-\boxed{\;
-\exists\,\varepsilon^\star:\quad
-f\big(h_\ell * \Top{\ell}(u+\delta^\star)\big)=\text{device }\tau,
-\qquad \|\delta^\star\|=\varepsilon^\star\|u\| .
-\;}
-\label{eq:reach}
-\end{equation}
-
-\paragraph{Experimental confirmation.} With correctly scaled $\delta$ (realized PSR $=$ label)
-passed through the legitimate transmitter's own hardware, the reading flips to the target at
-$\varepsilon^\star$ corresponding to $\mathrm{PSR}\approx 0$~dB
-($\|\delta\|\approx\|u_{\mathrm{payload}}\|$): $f(y_{\mathrm{SC}})=\text{device }\tau$ for
-$71\%$ of frames, versus $0\%$ for a \emph{random} $\delta$ of equal power (ruling out
-loud--signal collapse) and $0\%$ for the two--channel adversary at every PSR. The barrier of
-\eqref{eq:invert}--\eqref{eq:reach} therefore holds for an \emph{external radiator} ($\Top{a}$)
-but \emph{not} for pre--distortion at the legitimate transmitter, whose own invertible
-$\Top{\ell}$ the drive rides through.
 
 \section{Contrast with Kim (channel--limited attack)}
 If instead the classifier reads \emph{content} (modulation),
