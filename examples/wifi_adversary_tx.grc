@@ -65,8 +65,8 @@ blocks:
     rangeType: float
     start: '0'
     step: '0.5'
-    stop: '35'
-    value: '0'
+    stop: '31.5'
+    value: '22'
     widget: counter_slider
   states:
     bus_sink: false
@@ -242,7 +242,7 @@ blocks:
     options: '[0, 1, 2]'
     orient: Qt.QVBoxLayout
     type: real
-    value: '0'
+    value: 6e6
     widget: combo_box
   states:
     bus_sink: false
@@ -400,8 +400,8 @@ blocks:
     rangeType: float
     start: '0'
     step: '0.5'
-    stop: '35'
-    value: '33.5'
+    stop: '31.5'
+    value: '22'
     widget: counter_slider
   states:
     bus_sink: false
@@ -1047,7 +1047,7 @@ blocks:
     start_time: '-1.0'
     stream_args: ''
     stream_chans: '[]'
-    sync: none
+    sync: sync
     time_source0: ''
     time_source1: mimo
     time_source2: ''
