@@ -1,0 +1,362 @@
+\documentclass[11pt]{article}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{bm}
+\usepackage[margin=1in]{geometry}
+
+% ---- notation ----
+\newcommand{\Top}[1]{\mathcal{T}_{#1}}          % transmit operator
+\newcommand{\real}{\mathbb{R}}
+\newcommand{\comp}{\mathbb{C}}
+\newcommand{\ba}{\bm{\theta}}
+\newcommand{\argmin}{\operatorname*{arg\,min}}
+\newcommand{\argmax}{\operatorname*{arg\,max}}
+\newcommand{\Range}{\operatorname{range}}
+\DeclareMathOperator{\CE}{CE}
+
+\title{The Hardware Barrier to Over--the--Air Adversarial RF--Fingerprint Spoofing:\\
+Why External Radiation Fails but Transmitter Pre--Distortion Succeeds}
+\author{Hakim Lado \and Nirnimesh Nghose}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+Radio-frequency device-fingerprinting classifiers identify a transmitter from the
+hardware impairments---power-amplifier nonlinearity, I/Q imbalance, carrier frequency
+offset, phase noise---stamped on its emissions. We ask whether a digital adversarial
+perturbation can spoof such a classifier over the air, and give a structural answer that
+turns on \emph{whose hardware the perturbation passes through}. A targeted perturbation
+that flips the classifier from a legitimate device to a chosen target with probability one
+at the receiver input yields $\approx\!0\%$ fooling when it is radiated by a \emph{second,
+external} transmitter: the classifier reads the emitter's hardware parameters, but every
+signal the adversary radiates is passed through the adversary's own---foreign and
+non-invertible---transmit operator, so it carries the \emph{adversary's} fingerprint, not
+the target's. This barrier is strictly deeper than a channel-limited attack---
+expectation-over-transformation (channel-aware) crafting neutralizes the propagation
+channel but not the adversary's hardware operator, and over-the-air fooling stays
+$\approx\!0\%$. By contrast, when the \emph{same} perturbation is pre-distorted into the
+legitimate transmitter's own baseband---riding through its \emph{invertible} hardware
+operator---the target \emph{is} reachable: the required drive exists in closed form, and
+experimentally the classifier reads the target for $71\%$ of frames at unit
+perturbation-to-signal ratio (versus $0\%$ for a random perturbation of equal power, and
+$0\%$ for the external adversary at every power). The hardware barrier therefore stops an
+external radiator but not pre-distortion at the legitimate transmitter---the decisive
+distinction being \emph{addition through a foreign non-invertible operator} versus
+\emph{pre-composition with an invertible own operator}.
+\end{abstract}
+
+\noindent
+We formalize both halves of this result: why a targeted perturbation $\delta$ that flips a
+device--fingerprint classifier from a legitimate device to a target with probability~$1$ at
+the receiver input yields $\approx 0$ fooling when radiated by a \emph{second} transmitter
+(the hardware barrier, deeper than Kim's channel--limited result), and why the same
+$\delta$ \emph{does} reach the target when pre--distorted through the legitimate
+transmitter's own invertible hardware.
+
+\section*{Notation}
+\begin{center}\small
+\begin{tabular}{ll}
+\hline
+\multicolumn{2}{l}{\emph{Signals and hardware}}\\
+$n,\ u[n]$ & sample index; intended baseband samples (digital content)\\
+$\Top{d}$ & transmit (hardware) operator of device $d$, eq.~\eqref{eq:Top}\\
+$g_d,M_d,c_d,\omega_d,\xi_d$ & PA nonlinearity, I/Q imbalance, DC offset, CFO, phase noise of $d$\\
+$\ba_d$ & fingerprint: impairment vector $(g_d,M_d,c_d,\omega_d,\xi_d)$\\
+$h_d,\ w,\ y$ & channel $d\!\to\!$RX; additive noise; received signal, eq.~\eqref{eq:rx}\\
+\hline
+\multicolumn{2}{l}{\emph{Classifier}}\\
+$f$ & fingerprint classifier\\
+$s_k(y)$ & score (logit) for device $k$; decision $\hat d(y)=\argmax_k s_k$\\
+$S_k,\ \hat\ba(y)$ & score vs.\ impairment params; signature extracted from $y$\\
+\hline
+\multicolumn{2}{l}{\emph{Attack}}\\
+$x$ & captured device~6 frame ($f(x)=$device~6); attack start point\\
+$\delta,\ \delta^\star$ & perturbation; PGD (digital) optimum\\
+$\delta'$ & digital drive loaded into the adversary's DAC\\
+$\varepsilon,\ \bm e_4,\ \CE$ & budget $\|\delta\|\!\le\!\varepsilon\|x\|$; target one-hot (device~4); cross-entropy\\
+device~6 / device~4 & legit transmitter / spoofing target\\
+\hline
+\multicolumn{2}{l}{\emph{Single-channel (pre-distortion)}}\\
+$\ell,\ \tau$ & generic legitimate transmitter / target device (expt: dev~6 / dev~4)\\
+$y_{\mathrm{SC}},\ J_\ell(u)$ & single-channel emission eq.~\eqref{eq:sc}; Jacobian of $\Top{\ell}$ at $u$, eq.~\eqref{eq:jac}\\
+$\mathcal{P}_\ell$ & emittable perturbation set through own hardware (full rank)\\
+\hline
+\multicolumn{2}{l}{\emph{Over-the-air and EOT}}\\
+subscript $a$ & adversary radio: $\Top{a},\,h_a,\,\ba_a$\\
+$y_{\mathrm{OTA}},\ \mathcal{P}_a$ & OTA composite eq.~\eqref{eq:ota}; physically radiable set\\
+$\mathrm{PSR}$ & perturbation-to-signal ratio (dB)\\
+$t,\ \mathcal{T}$ & a transformation and its distribution (EOT)\\
+$h,\ \mathcal{H}$ & a channel realization and its distribution (EOT)\\
+$\delta^\star_{\mathrm{EOT}}$ & EOT (distribution-robust) perturbation\\
+\hline
+\end{tabular}
+\end{center}
+
+\section{Hardware transmit operator (the fingerprint)}
+Each device $d$ maps intended baseband samples $u[n]\in\comp$ to an emitted RF
+baseband signal through a nonlinear transmit operator $\Top{d}$:
+\begin{equation}
+\Top{d}(u)[n] \;=\; g_d\!\big(M_d\,u[n] + c_d\big)\, e^{\,j\omega_d n} \;+\; \xi_d[n],
+\label{eq:Top}
+\end{equation}
+with power--amplifier nonlinearity $g_d(\cdot)$ (AM/AM $+$ AM/PM, \emph{non-invertible
+past saturation}), I/Q imbalance $M_d$, DC offset $c_d$, carrier frequency offset
+$\omega_d$, and phase noise $\xi_d$. Collect the impairment parameters as the
+\emph{fingerprint}
+\begin{equation}
+\ba_d \;=\; (g_d,\,M_d,\,c_d,\,\omega_d,\,\xi_d).
+\end{equation}
+
+\section{Received signal and classifier}
+Through channel $h_d$ with noise $w$,
+\begin{equation}
+y \;=\; h_d * \Top{d}(u) + w .
+\label{eq:rx}
+\end{equation}
+The classifier $f$ is trained (per--window unit--RMS normalization; CFO/phase/time
+augmentation) to be invariant to content $u$ and channel $h$ and to read the
+impairments. Hence its class scores factor through an extracted signature
+$\hat\ba(y)$:
+\begin{equation}
+s_k(y) \;\approx\; S_k\!\big(\hat\ba(y)\big),
+\qquad
+\hat d(y) \;=\; \argmax_k s_k(y).
+\label{eq:classifier}
+\end{equation}
+\textbf{Key:} $f$ is a function of the hardware parameters $\ba$, not of the raw
+content.
+
+\section{Digital targeted PGD (construction of $\delta$)}
+Take a captured device~6 frame $x$ with $f(x)=\text{dev }6$
+(i.e.\ $\hat\ba(x)\approx\ba_6$). Solve, over an $\ell_2$ ball of radius
+$\varepsilon\|x\|$,
+\begin{equation}
+\delta^\star \;=\; \argmin_{\|\delta\|\le \varepsilon\|x\|}\;
+\CE\!\big(f(x+\delta),\,\bm e_4\big).
+\label{eq:pgd}
+\end{equation}
+PGD ascends $\nabla_\delta s_4(x+\delta)$ \emph{through the classifier}, so by
+construction
+\begin{equation}
+\delta^\star \in \text{input (signal) space of } f, \text{ defined by } \nabla f,
+\quad\text{such that } S_4(\hat\ba(x+\delta^\star)) > S_6(\hat\ba(x+\delta^\star)).
+\end{equation}
+Empirically $f(x+\delta^\star)=\text{dev }4$ with probability $1$.
+
+\section{Digital evaluation succeeds}
+Digitally, $x+\delta^\star$ is fed \emph{directly} to $f$; nothing sits between
+$\delta^\star$ and the input:
+\begin{equation}
+f\!\big(x+\delta^\star\big) = \text{dev }4. \qquad\checkmark
+\end{equation}
+
+\section{Over-the-air (two-channel) signal}
+Device~6 emits the legit frame $h_6*\Top{6}(u)$ (carries $\ba_6$); the adversary
+loads a digital drive $\delta'$ into \emph{its} DAC and emits $h_a*\Top{a}(\delta')$
+(carries $\ba_a$). They superimpose linearly in the air:
+\begin{equation}
+y_{\mathrm{OTA}} \;=\; h_6 * \Top{6}(u) \;+\; h_a * \Top{a}(\delta') \;+\; w .
+\label{eq:ota}
+\end{equation}
+We require $f(y_{\mathrm{OTA}})=\text{dev }4$.
+
+\section{The exact condition, and why it cannot hold}
+To reproduce the digital success the radiated perturbation must equal
+$\delta^\star$:
+\begin{equation}
+h_a * \Top{a}(\delta') \;\overset{!}{=}\; \delta^\star
+\quad\Longrightarrow\quad
+\delta' \;=\; \Top{a}^{-1}\!\Big(h_a^{-1}\big(\delta^\star\big)\Big).
+\label{eq:invert}
+\end{equation}
+This is infeasible: (i) $\Top{a}^{-1}$ does not exist ($g_a$ non-invertible past
+saturation; $\delta^\star$ may lie outside $\Range(\Top{a})$); (ii) $h_a$ is unknown
+without channel awareness; (iii) every physically radiated signal is passed through
+$\Top{a}$, which \emph{imprints $\ba_a$ on everything it emits}.
+
+\section{Reachable-set argument (core result)}
+Define the set of perturbations the adversary can physically place on the air:
+\begin{equation}
+\mathcal{P}_a \;=\; \big\{\, h_a * \Top{a}(\delta') \;:\; \|\delta'\|\le \varepsilon \,\big\},
+\qquad \text{every element carries } \ba_a .
+\end{equation}
+The OTA attack succeeds iff $\exists\, p\in\mathcal{P}_a$ with
+$f\big(h_6*\Top{6}(u)+p\big)=\text{dev }4$. Because $f$ reads impairments and every
+$p\in\mathcal{P}_a$ carries $\ba_a$, the composite signature is a mixture along the
+$\ba_6$--$\ba_a$ axis parameterized by the perturbation--to--signal ratio (PSR):
+\begin{equation}
+\hat\ba\big(h_6*\Top{6}(u)+p\big) \;=\; \Theta\big(\ba_6,\ba_a;\,\mathrm{PSR}\big).
+\end{equation}
+As PSR grows, the reading slides $\text{dev }6 \to (\text{device with fingerprint}
+\approx \ba_a)$, and
+\begin{equation}
+\boxed{\;
+f(y_{\mathrm{OTA}}) = \text{dev }4 \quad\Longleftrightarrow\quad \ba_a \approx \ba_4
+\;}
+\end{equation}
+i.e.\ only if the adversary radio \emph{is} device~4. The digital solution
+$\delta^\star$ is a direction in $\nabla f$--space; $\mathcal{P}_a$ is a manifold in
+hardware--$\ba_a$--space; generically $\delta^\star\notin\mathcal{P}_a$. This is the
+observed $0\%$.
+
+\section{Single--channel pre--distortion: the target \emph{is} reachable}\label{sec:single}
+The barrier above is specific to a \emph{foreign} radiator. Consider instead a
+\emph{single--channel} (pre--distortion) attack in which the drive $\delta$ is injected into
+the legitimate transmitter's baseband, \emph{upstream} of its own hardware. Write $\ell$ for
+the legitimate device and $\tau$ for the target device (in our experiments
+$\ell=\text{dev }6$, $\tau=\text{dev }4$). The emitted signal is
+\begin{equation}
+y_{\mathrm{SC}} \;=\; h_\ell * \Top{\ell}(u+\delta) \;+\; w .
+\label{eq:sc}
+\end{equation}
+Now $\delta$ is \emph{pre--composed} with $\Top{\ell}$: it passes through the \emph{same}
+operator as the legitimate signal, not through a foreign $\Top{a}$. The perturbation it
+places on the emission is the operator difference
+\begin{equation}
+e(\delta) \;=\; \Top{\ell}(u+\delta) - \Top{\ell}(u)
+\;\approx\; J_\ell(u)\,\delta,
+\qquad
+J_\ell(u) \;=\; \operatorname{diag}\!\big(g_\ell'(M_\ell u + c_\ell)\big)\,M_\ell\,e^{\,j\omega_\ell n},
+\label{eq:jac}
+\end{equation}
+where $J_\ell(u)$ is the Jacobian of $\Top{\ell}$ at $u$. Wherever the PA is not in hard
+saturation ($g_\ell'\neq 0$) and the I/Q mixing $M_\ell$ is non--singular, $J_\ell(u)$ has
+\emph{full rank} and is invertible --- in contrast to $\Top{a}$, which is foreign and
+non--invertible past saturation.
+
+\paragraph{Reachable set.} The physically emittable perturbations are
+\begin{equation}
+\mathcal{P}_\ell \;=\; \big\{\,\Top{\ell}(u+\delta)-\Top{\ell}(u)\;:\;\|\delta\|\le\varepsilon\|u\|\,\big\}
+\;\approx\; J_\ell(u)\cdot\mathrm{Ball}\!\big(\varepsilon\|u\|\big).
+\end{equation}
+Because $J_\ell(u)$ is full rank, $\mathcal{P}_\ell$ is a \emph{full--dimensional}
+neighbourhood of the origin in emission space: it spans every direction as $\varepsilon$
+grows. In particular the emission--domain direction $d^\star = h_\ell*\delta^\star$ that the
+classifier reads as device~$\tau$ lies in $\mathcal{P}_\ell$ for large enough $\varepsilon$, and
+the required drive \emph{exists} in closed form (to first order),
+\begin{equation}
+\delta^\star \;\approx\; J_\ell(u)^{-1}\,d^\star
+\;=\; J_\ell(u)^{-1}\big(h_\ell * \delta^\star_{\mathrm{dig}}\big),
+\label{eq:sc-inverse}
+\end{equation}
+in sharp contrast to the two--channel condition \eqref{eq:invert}, where
+$\delta'=\Top{a}^{-1}(h_a^{-1}(\delta^\star))$ does \emph{not} exist. The whole distinction is
+\emph{pre--composition with an invertible own--hardware operator} versus \emph{addition through
+a foreign non--invertible one}:
+\begin{equation}
+\underbrace{\Top{\ell}(u+\delta)}_{\text{$\delta$ \emph{inside} $\Top{\ell}$ (invertible)}}
+\quad\text{vs.}\quad
+\underbrace{\Top{\ell}(u)+h_a{*}\Top{a}(\delta')}_{\text{$\delta'$ \emph{through} foreign $\Top{a}$}} .
+\end{equation}
+Hence there is a finite drive at which the reading crosses into device~$\tau$:
+\begin{equation}
+\boxed{\;
+\exists\,\varepsilon^\star:\quad
+f\big(h_\ell * \Top{\ell}(u+\delta^\star)\big)=\text{device }\tau,
+\qquad \|\delta^\star\|=\varepsilon^\star\|u\| .
+\;}
+\label{eq:reach}
+\end{equation}
+
+\paragraph{Experimental confirmation.} With correctly scaled $\delta$ (realized PSR $=$ label)
+passed through the legitimate transmitter's own hardware, the reading flips to the target at
+$\varepsilon^\star$ corresponding to $\mathrm{PSR}\approx 0$~dB
+($\|\delta\|\approx\|u_{\mathrm{payload}}\|$): $f(y_{\mathrm{SC}})=\text{device }\tau$ for
+$71\%$ of frames, versus $0\%$ for a \emph{random} $\delta$ of equal power (ruling out
+loud--signal collapse) and $0\%$ for the two--channel adversary at every PSR. The barrier of
+\eqref{eq:invert}--\eqref{eq:reach} therefore holds for an \emph{external radiator} ($\Top{a}$)
+but \emph{not} for pre--distortion at the legitimate transmitter, whose own invertible
+$\Top{\ell}$ the drive rides through.
+
+\section{Contrast with Kim (channel--limited attack)}
+If instead the classifier reads \emph{content} (modulation),
+$s_k(y)\approx S_k(c(y))$, the perturbation acts on content, which traverses the
+linear part and is channel--correctable. Making $\delta$ channel--aware~\cite{kim} handles
+$h_a^{-1}$ and the perturbation reaches the content decision region: the attack
+\emph{works}. There the sole barrier is the channel $h_a$. Here the barrier is the
+hardware operator $\Top{a}$, which no digital drive from a foreign radio can invert,
+because the target $\ba_4$ is a property of the \emph{emitter}, not of the injected
+signal.
+
+\section{Prediction for Expectation--over--Transformation (EOT)}
+EOT~\cite{athalye} robustifies over the channel,
+\begin{equation}
+\delta^\star_{\mathrm{EOT}} \;=\; \argmax_{\|\delta\|\le\varepsilon\|x\|}\;
+\mathbb{E}_{h\sim\mathcal{H}}\big[\, s_4\big(h(x+\delta)\big)\,\big],
+\end{equation}
+which neutralizes $h_a$---the whole of Kim's barrier.\footnote{EOT (Expectation over
+Transformation) is \emph{not} channel estimation. Channel estimation \emph{measures} the
+specific channel $h_a$ and inverts it ($\delta'=h_a^{-1}(\delta^\star)$); it needs
+pilots/feedback on that link. EOT instead maximizes the \emph{expected} objective over a
+modeled \emph{distribution} of channel realizations $\mathcal{H}$ (here random sub-sample
+time-shift and carrier-phase rotation), producing a $\delta$ robust to the whole family
+\emph{without} estimating any single channel. We use EOT because the adversary$\to$receiver
+link carries no pilot/feedback, so $h_a$ is unobservable. Both, however, only address
+$h_a$; neither touches $\Top{a}$.} But EOT does nothing to
+$\Top{a}$: the emitted signal is still $\Top{a}(\delta'_{\mathrm{EOT}})$ and still
+carries $\ba_a$. Therefore
+\begin{equation}
+\text{Kim's barrier } (h_a): \text{ closed by EOT}; \qquad
+\text{hardware barrier } (\Top{a}): \text{ untouched by EOT}.
+\end{equation}
+\emph{Prediction (confirmed in \S\ref{sec:results}):} EOT remains $\approx 0\%$ toward
+device~4 unless $\ba_a\approx\ba_4$. If the EOT run still fails, the barrier is hardware
+($\Top{a}$), strictly deeper than Kim's channel result; if it succeeds, the limitation
+was only the channel, i.e.\ the same as Kim.
+
+\section{Experimental confirmation}\label{sec:results}
+Session-14 over-the-air measurements (hardware-fingerprint CVNN; device~6 legit, device~4
+target; targeted PGD; $\delta$ confined to the payload; pristine $\Top{6}(u)$ on ch0 so
+device~6 stamps its fingerprint once). The classifier scoring the captures is
+domain-adapted to the replay so the $\delta$-off baseline reads device~6.
+
+\begin{center}
+\begin{tabular}{lc}
+\hline
+Setting & targeted $\to$ device~4 \\
+\hline
+Digital ($\delta$ at receiver input) & $\mathbf{100\%}$ \\
+OTA, no-EOT (2-channel) & $\approx 0\%$ (all PSR) \\
+OTA, channel-aware EOT (2-channel) & $\approx 0\%$ (all PSR) \\
+\hline
+\end{tabular}
+\end{center}
+
+\noindent Per-PSR fraction (channel-aware EOT sweep, replay-adapted model):
+\begin{center}
+\begin{tabular}{rcc}
+\hline
+PSR (dB) & $\to$ device~4 & $\to$ device~6 \\
+\hline
+$0$ (loudest $\delta$) & $0.00$ & $1.00$ \\
+$-5$  & $0.04$ & $0.75$ \\
+$-10$ & $0.00$ & $0.96$ \\
+$-15$ & $0.04$ & $0.95$ \\
+$-20$ & $0.01$ & $0.96$ \\
+$-30$ ($\approx\delta$-off) & $0.21^{\dagger}$ & $0.68$ \\
+\hline
+\end{tabular}
+\end{center}
+{\small $^{\dagger}$ residual baseline mis-read noise, \emph{anti-correlated} with $\delta$
+power (largest where $\delta$ is weakest); a $\mathrm{thr}{=}2$ extraction merged the
+near-$\delta$-off capture into $16$\,s bursts and spuriously reported $0.60$, corrected to
+$0.21$ with $\mathrm{thr}\ge 4$.}
+
+At the loudest perturbation (PSR $0$\,dB) the composite still reads device~6 with
+probability $1.00$, and the fooling rate toward device~4 does \emph{not} increase with
+perturbation power. Both the naive and the channel-aware over-the-air attacks give
+$\approx 0\%$ toward device~4. This confirms the prediction: EOT neutralizes
+the channel $h_a$ but not the hardware operator $\Top{a}$, so the barrier is hardware ---
+strictly deeper than Kim's channel-limited result.
+
+\begin{thebibliography}{9}
+\bibitem{athalye} A.~Athalye, L.~Engstrom, A.~Ilyas, and K.~Kwok,
+``Synthesizing Robust Adversarial Examples,'' in \emph{Proc.\ 35th Int.\ Conf.\ on
+Machine Learning (ICML)}, 2018, pp.~284--293.
+\bibitem{kim} B.~Kim, Y.~E.~Sagduyu, K.~Davaslioglu, T.~Erpek, and S.~Ulukus,
+``Channel-Aware Adversarial Attacks Against Deep Learning-Based Wireless Signal
+Classifiers,'' \emph{IEEE Trans.\ Wireless Commun.}, vol.~21, no.~6, pp.~3868--3880, 2022.
+\end{thebibliography}
+
+\end{document}
