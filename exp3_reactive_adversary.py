@@ -70,20 +70,8 @@ def run_live(a):
                                 rf_freq_policy=uhd.tune_request.POLICY_MANUAL), 0)
             s.u.set_antenna(a.rx_ant, 0); s.u.set_normalized_gain(a.rx_gain, 0)
             s.k = blocks.file_sink(gr.sizeof_gr_complex, out, False); s.connect(s.u, s.k)
-    sense = '/tmp/reactive_sense.bin'
-    tb = rx(sense); tb.start(); time.sleep(a.sense_secs); tb.stop(); tb.wait()
-    iq = np.fromfile(sense, dtype=np.complex64)
-    t0, P, conf = detect_timing(iq)
-    print(f"[detect] t0={t0} P={P} confidence={conf:.2f} (rms {np.sqrt(np.mean(np.abs(iq)**2)):.5f})", flush=True)
-    if conf < 0.5:
-        print("[abort] cannot resolve device_6 timing (1198 RX not hearing frames). Fix RX antenna.", flush=True)
-        return
-    # ---- STRIKE: schedule delta so its slot-start aligns to a future device_6 frame ----
-    now = a.sense_secs + 1.0                                   # FPGA time has advanced past sensing
-    k = int(np.ceil((now * FS - t0) / P)) + 5                  # first future frame with margin
-    t_start = (t0 + k * P) / FS                                # TX-time to begin the delta bundle
     class tx(gr.top_block):
-        def __init__(s, f):
+        def __init__(s, f, t_start):
             gr.top_block.__init__(s)
             s.u = uhd.usrp_sink(f"serial={SERIAL}", uhd.stream_args(cpu_format="fc32", channels=[0]))
             s.u.set_samp_rate(FS)
@@ -92,8 +80,30 @@ def run_live(a):
             s.u.set_antenna(a.tx_ant, 0); s.u.set_normalized_gain(a.tx_gain, 0)
             s.u.set_start_time(uhd.time_spec(t_start))          # aligned start (shared FPGA clock)
             s.src = blocks.file_source(gr.sizeof_gr_complex, f, True); s.connect(s.src, s.u)
-    print(f"[strike] delta bundle starts at TX-time {t_start:.4f}s (frame k={k}), holding {a.strike_secs}s", flush=True)
-    tb = tx(a.delta); tb.start(); time.sleep(a.strike_secs); tb.stop(); tb.wait()
+
+    # ---- SENSE (only device_6 + 1198 = 2 radios; b200 not yet on -> stable, no GigE flood) ----
+    rx_tb = rx('/tmp/reactive_sense.bin'); rx_tb.start(); time.sleep(a.sense_secs); rx_tb.stop(); rx_tb.wait()
+    iq = np.fromfile('/tmp/reactive_sense.bin', dtype=np.complex64)
+    t0, P, conf = detect_timing(iq)
+    print(f"[detect] t0={t0} P={P} conf={conf:.2f} rms={np.sqrt(np.mean(np.abs(iq)**2)):.4f}", flush=True)
+    if conf < 0.5:
+        print("[abort] cannot resolve device_6 timing (1198 RX not hearing frames).", flush=True); return
+    # schedule the strike a few sec out (aligned to a future device_6 frame), leaving room for the
+    # b200 launch + tx init so the timed burst is never late
+    k = int(np.ceil(((a.sense_secs + 4.0) * FS - t0) / P)) + 3
+    t_start = (t0 + k * P) / FS
+    # ---- launch b200 ONLY for the strike (never during sense -> avoids 3-radio GigE congestion) ----
+    cap_proc = None
+    if a.capture_out:
+        import subprocess, os
+        cap_proc = subprocess.Popen(['python3', os.path.join(os.path.dirname(__file__), 'exp3_rx_capture.py'),
+                                     '--out', a.capture_out, '--secs', str(a.strike_secs + 2)],
+                                    stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        print(f"[capture] b200 recording strike -> {a.capture_out}", flush=True)
+    print(f"[strike] delta at TX-time {t_start:.3f}s (frame k={k}), holding {a.strike_secs}s "
+          f"(shorter strike = less open-loop drift)", flush=True)
+    tb = tx(a.delta, t_start); tb.start(); time.sleep(a.strike_secs); tb.stop(); tb.wait()
+    if cap_proc: cap_proc.wait()
     print("[done] strike complete", flush=True)
 
 
@@ -104,7 +114,8 @@ def main():
     p.add_argument('--delta', default='/home/nghoselab/captures/session14/attack/exp3_2ch_0714/ch1__scratch_pgd_untgt__m6.bin')
     p.add_argument('--rx-ant', default='J1'); p.add_argument('--tx-ant', default='J2')
     p.add_argument('--rx-gain', type=float, default=0.6); p.add_argument('--tx-gain', type=float, default=0.3)
-    p.add_argument('--sense-secs', type=float, default=3.0); p.add_argument('--strike-secs', type=float, default=12.0)
+    p.add_argument('--sense-secs', type=float, default=1.5); p.add_argument('--strike-secs', type=float, default=8.0)
+    p.add_argument('--capture-out', default=None, help='b200 records the strike to this file (launched at strike time only)')
     a = p.parse_args()
     if a.detect_file:
         iq = np.fromfile(a.detect_file, dtype=np.complex64)
