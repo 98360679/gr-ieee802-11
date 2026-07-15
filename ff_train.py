@@ -43,7 +43,8 @@ def main():
     ap.add_argument('--val-run', type=int, default=3, help='within-day: run held out for val')
     ap.add_argument('--train-day', type=int, default=1, help='cross-day: train day')
     ap.add_argument('--val-day', type=int, default=2, help='cross-day: test day')
-    ap.add_argument('--devices', default=None, help='explicit comma list, else auto-discover')
+    ap.add_argument('--devices', default=None,
+                    help='explicit comma list of folder names (e.g. B200,USRP2,N2922), else auto-discover')
     # training
     ap.add_argument('--epochs', type=int, default=40)
     ap.add_argument('--lr', type=float, default=6e-4)
@@ -70,7 +71,7 @@ def main():
     Xtr, ytr, Xva, yva, vfid, id2label, names, counts = build_dataset(
         a.root, a.exp, a.protocol, train_day=a.train_day, val_day=a.val_day,
         day=a.day, val_run=a.val_run,
-        devices=[int(x) for x in a.devices.split(',')] if a.devices else None,
+        devices=a.devices.split(',') if a.devices else None,
         hop_train=a.hop_train, thr_mult=a.thr_mult, cfo_correct=a.cfo_correct, rebuild=a.rebuild)
     nc = len(names)
     print(f'  devices ({nc}): {names}')

@@ -46,17 +46,19 @@ def exp_dir(root, day, exp):
 
 
 def discover_devices(root, day, exp):
-    """sorted list of device IDs present under day{day}/exp{exp}."""
-    ids = []
-    for p in glob.glob(os.path.join(exp_dir(root, day, exp), 'device_*')):
-        m = re.search(r'device_(\d+)$', p)
-        if m and os.path.isdir(p):
-            ids.append(int(m.group(1)))
-    return sorted(set(ids))
+    """sorted list of device folder NAMES under day{day}/exp{exp}. These are the class
+    labels: 'device_1'/'device_2'/... for Exp 1 (same model → numbered), or model names
+    like 'B200'/'USRP2'/'N2922' for Exp 2 (different models → named)."""
+    names = []
+    for p in glob.glob(os.path.join(exp_dir(root, day, exp), '*')):
+        if os.path.isdir(p):
+            names.append(os.path.basename(p))
+    return sorted(set(names))
 
 
 def _runs_for(root, day, exp, dev):
-    return sorted(glob.glob(os.path.join(exp_dir(root, day, exp), f'device_{dev}', '*.bin')))
+    # ONLY the RX captures — never the TX-side frame_run_*.bin tap that shares the folder.
+    return sorted(glob.glob(os.path.join(exp_dir(root, day, exp), dev, 'clean_run_*.bin')))
 
 
 def _run_no(cap):
@@ -93,7 +95,7 @@ def build_dataset(root, exp, protocol, train_day=1, val_day=2, day=1, val_run=3,
         raise SystemExit(f'no devices found under {exp_dir(root, train_day if protocol=="cross-day" else day, exp)} '
                          f'(and matching day) — capture some first.')
     id2label = {d: i for i, d in enumerate(devices)}
-    names = [f'device_{d}' for d in devices]
+    names = list(devices)
 
     key = f'exp{exp}_{protocol}_{tag_days}_c{int(cfo_correct)}_dev{"-".join(map(str,devices))}'
     cpath = os.path.join(CACHE_DIR, key + '.npz')
@@ -124,9 +126,9 @@ def build_dataset(root, exp, protocol, train_day=1, val_day=2, day=1, val_run=3,
                 for w in _windows_from_cap(cap, WIN, thr_mult, cfo_correct):
                     Xva.append(w); yva.append(np.full(len(w), lab))
                     vfid.append(np.full(len(w), fid)); fid += 1; nva += 1
-        counts[f'device_{d}'] = {'train_frames': ntr, 'val_frames': nva}
+        counts[d] = {'train_frames': ntr, 'val_frames': nva}
         if verbose:
-            print(f'  device_{d} (label {lab}): {ntr} train / {nva} val frames')
+            print(f'  {d} (label {lab}): {ntr} train / {nva} val frames')
 
     if not Xtr or not Xva:
         raise SystemExit('empty train or val set — check --protocol / day / run availability.')
@@ -147,11 +149,12 @@ def main():
     ap.add_argument('--val-run', type=int, default=3, help='within-day: run held out for val')
     ap.add_argument('--train-day', type=int, default=1, help='cross-day: train day')
     ap.add_argument('--val-day', type=int, default=2, help='cross-day: test day')
-    ap.add_argument('--devices', default=None, help='explicit comma list, else auto-discover')
+    ap.add_argument('--devices', default=None,
+                    help='explicit comma list of folder names (e.g. device_1,device_2 or B200,USRP2), else auto-discover')
     ap.add_argument('--cfo-correct', action='store_true')
     ap.add_argument('--rebuild', action='store_true')
     a = ap.parse_args()
-    devices = [int(x) for x in a.devices.split(',')] if a.devices else None
+    devices = a.devices.split(',') if a.devices else None
     print(f'ff_dataset  exp{a.exp}  {a.protocol}  root {a.root}')
     Xtr, ytr, Xva, yva, vfid, id2label, names, counts = build_dataset(
         a.root, a.exp, a.protocol, train_day=a.train_day, val_day=a.val_day,

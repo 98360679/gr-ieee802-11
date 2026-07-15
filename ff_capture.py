@@ -29,7 +29,7 @@ level locks; then the RX re-runs to record the 30 s clean_run(s). The shared rec
   python3 ff_capture.py --day 1 --exp 2 --device-id 3 --tx-serial 2192 \
         --tx-antenna J1 --run-ids 1,2,3
 """
-import os, re, sys, time, signal, argparse, subprocess
+import os, re, sys, time, signal, argparse, subprocess, shutil
 os.environ.setdefault('QT_QPA_PLATFORM', 'offscreen')
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
@@ -115,6 +115,9 @@ def main():
     ap.add_argument('--exp', type=int, required=True, choices=[1, 2],
                     help='1 = same-model devices, 2 = different-model devices')
     ap.add_argument('--device-id', type=int, required=True)
+    ap.add_argument('--name', default=None,
+                    help='rename the capture folder to this label (e.g. B200, USRP2, N2922) '
+                         'instead of device_{id} — used for Exp 2 model labels')
     ap.add_argument('--run-id', type=int, default=1)
     ap.add_argument('--run-ids', default='1,2,3', help='comma list — several runs in one init')
     ap.add_argument('--tx-serial', required=True, help="serial= (or IP for addr=)")
@@ -217,6 +220,13 @@ def main():
                         f"{cap_db if cap_db is not None else db:.2f},{sz:.0f},{nfr}\n")
     finally:
         tb.stop(); tb.wait()
+        if a.name and locked is not None:                # relabel folder to the model name
+            target = os.path.join(base, a.name)
+            if os.path.abspath(target) != os.path.abspath(dev_dir):
+                if os.path.exists(target):
+                    shutil.rmtree(target)
+                os.rename(dev_dir, target)
+                print(f"[ff] folder relabeled: device_{a.device_id} -> {a.name}  ({target})", flush=True)
 
 
 if __name__ == '__main__':
