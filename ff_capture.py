@@ -199,7 +199,8 @@ def main():
             print(f"[ff] did NOT converge (last g={g:.4f}); not capturing."); return
         g, db = locked
         run_ids = [int(x) for x in a.run_ids.split(',')] if a.run_ids else [a.run_id]
-        print(f"[ff] LOCKED device_{a.device_id}: tx_gain={g:.4f}  signal={db:.2f} dB — "
+        sig_lock = 'None' if db is None else f'{db:.2f}'
+        print(f"[ff] LOCKED device_{a.device_id}: tx_gain={g:.4f}  signal={sig_lock} dB — "
               f"capturing runs {run_ids} @ {a.capture_secs:.0f}s each (one init)", flush=True)
         tb.set_tx_gain(g)
         header = not os.path.exists(log_csv)
@@ -216,17 +217,22 @@ def main():
             with open(log_csv, 'a') as f:
                 if header:
                     f.write("day,exp,device_id,run_id,tx_gain,signal_db,clean_run_MB,frames\n"); header = False
-                f.write(f"{a.day},{a.exp},{a.device_id},{rid},{g:.4f},"
-                        f"{cap_db if cap_db is not None else db:.2f},{sz:.0f},{nfr}\n")
+                sig_csv = cap_db if cap_db is not None else db
+                sig_csv = '' if sig_csv is None else f'{sig_csv:.2f}'
+                f.write(f"{a.day},{a.exp},{a.device_id},{rid},{g:.4f},{sig_csv},{sz:.0f},{nfr}\n")
     finally:
         tb.stop(); tb.wait()
-        if a.name and locked is not None:                # relabel folder to the model name
+        if a.name and locked is not None:                # relabel folder to the model name (MERGE, don't clobber)
             target = os.path.join(base, a.name)
             if os.path.abspath(target) != os.path.abspath(dev_dir):
-                if os.path.exists(target):
-                    shutil.rmtree(target)
-                os.rename(dev_dir, target)
-                print(f"[ff] folder relabeled: device_{a.device_id} -> {a.name}  ({target})", flush=True)
+                os.makedirs(target, exist_ok=True)
+                for fn in os.listdir(dev_dir):           # move per-file; overwrite same-named (re-captured) runs,
+                    dst = os.path.join(target, fn)       # but KEEP other runs already in the target
+                    if os.path.exists(dst):
+                        os.remove(dst)
+                    shutil.move(os.path.join(dev_dir, fn), dst)
+                os.rmdir(dev_dir)
+                print(f"[ff] folder relabeled/merged: device_{a.device_id} -> {a.name}  ({target})", flush=True)
 
 
 if __name__ == '__main__':
